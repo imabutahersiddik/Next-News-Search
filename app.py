@@ -7,10 +7,6 @@ def fetch_news(api_key, search_word):
     url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}"
     response = requests.get(url)
     
-    # Log the response status code and text for debugging
-    st.write(f"Response Status Code: {response.status_code}")
-    st.write(f"Response Text: {response.text}")
-    
     if response.status_code == 200:
         return json.loads(response.text)
     else:
@@ -31,7 +27,9 @@ search_word = st.text_input("Enter keywords to search for news articles:")
 # Button to fetch news
 if st.button("Search"):
     if 'api_key' in st.session_state and search_word:
-        data = fetch_news(st.session_state.api_key, search_word)
+        with st.spinner("Fetching news articles..."):
+            data = fetch_news(st.session_state.api_key, search_word)
+            
         if data and 'articles' in data and len(data['articles']) > 0:
             for article in data['articles']:
                 st.write(f"**Title:** {article['title']}")
