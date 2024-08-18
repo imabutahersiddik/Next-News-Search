@@ -32,9 +32,9 @@ if st.button("Search"):
             
         if data and 'articles' in data and len(data['articles']) > 0:
             for article in data['articles']:
-                st.write(f"**Title:** {article['title']}")
-                st.write(f"**Description:** {article['description']}")
-                st.write("-" * 20)
+                st.write(f"**** {article['title']}")
+                st.write(f"**** {article['description']}")
+                st.write("-" * 19)
         else:
             st.warning("No articles found for your search query.")
     else:
