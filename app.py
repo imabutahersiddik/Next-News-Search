@@ -2,6 +2,9 @@ import streamlit as st
 import requests
 import json
 
+# Set the page title and layout
+st.set_page_config(page_title="Next News Search", layout="wide")
+
 # Function to fetch news articles
 def fetch_news(api_key, search_word):
     url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}"
@@ -35,8 +38,8 @@ if st.button("Search"):
             
         if data and 'articles' in data and len(data['articles']) > 0:
             for article in data['articles']:
-                st.write(f" {article['title']}")
-                st.write(f" {article['description']}")
+                st.write(f"**{article['title']}**")
+                st.write(f"{article['description']}")
                 st.write("-" * 19)
         else:
             st.warning("No articles found for your search query.")
@@ -50,7 +53,7 @@ if st.button("About"):
     You can enter your API key to fetch articles based on your search keywords. 
     Your API key will be saved in the current session.
     
-    Save securely your API keys, visit 
+    Save your API keys securely, visit 
     [this link](https://erath.vercel.app).
     """)
 
