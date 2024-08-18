@@ -53,8 +53,8 @@ if st.button("About"):
     You can enter your API key to fetch articles based on your search keywords. 
     Your API key will be saved in the current session.
     
-    Save your API keys securely, visit 
-    [this link](https://erath.vercel.app).
+    Save your API keys securely, in Erath 
+    [Click to continue in Erath](https://erath.vercel.app).
     """)
 
 # Instructions link for obtaining an API key
