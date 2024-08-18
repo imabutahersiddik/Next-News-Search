@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import json
+import streamlit.components.v1 as components
 
 # Function to fetch news articles
 def fetch_news(api_key, search_word):
@@ -20,20 +21,23 @@ def fetch_news(api_key, search_word):
 # Streamlit app layout
 st.title("Next News Search")
 
-# User input for API key
+# User input for API key with cookie support
 api_key = st.text_input("Enter your News API key:", type="password")
+if api_key:
+    st.session_state.api_key = api_key  # Save API key in session state
 
 # User input for search keywords
 search_word = st.text_input("Enter keywords to search for news articles:")
 
 # Button to fetch news
 if st.button("Search"):
-    if api_key and search_word:
-        data = fetch_news(api_key, search_word)
+    if 'api_key' in st.session_state and search_word:
+        data = fetch_news(st.session_state.api_key, search_word)
         if data and 'articles' in data and len(data['articles']) > 0:
             for article in data['articles']:
-                st.subheader(article['title'])
+                st.markdown(f"### {article['title']}")
                 st.write(article['description'])
+                st.markdown(f"[Read more]({article['url']})")
                 st.write("-" * 20)
         else:
             st.warning("No articles found for your search query.")
