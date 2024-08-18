@@ -35,10 +35,9 @@ if st.button("Search"):
         data = fetch_news(st.session_state.api_key, search_word)
         if data and 'articles' in data and len(data['articles']) > 0:
             for article in data['articles']:
-                st.markdown(f"### {article['title']}")
-                st.write(article['description'])
-                st.markdown(f"[Read more]({article['url']})")
-                st.write("-" * 20)
+    print(f"Title: {article['title']}")
+    print(f"Description: {article['description']}")
+    print("-" * 20)
         else:
             st.warning("No articles found for your search query.")
     else:
