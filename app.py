@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 import json
-import streamlit.components.v1 as components
 
 # Function to fetch news articles
 def fetch_news(api_key, search_word):
@@ -35,9 +34,9 @@ if st.button("Search"):
         data = fetch_news(st.session_state.api_key, search_word)
         if data and 'articles' in data and len(data['articles']) > 0:
             for article in data['articles']:
-    print(f"Title: {article['title']}")
-    print(f"Description: {article['description']}")
-    print("-" * 20)
+                st.write(f"**Title:** {article['title']}")
+                st.write(f"**Description:** {article['description']}")
+                st.write("-" * 20)
         else:
             st.warning("No articles found for your search query.")
     else:
