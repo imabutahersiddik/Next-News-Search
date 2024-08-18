@@ -1,10 +1,6 @@
 import streamlit as st
 import requests
 import json
-from streamlit_cookies_manager import Cookies
-
-# Initialize cookies manager
-cookies = Cookies()
 
 # Function to fetch news articles
 def fetch_news(api_key, search_word):
@@ -20,12 +16,13 @@ def fetch_news(api_key, search_word):
 # Streamlit app layout
 st.title("Next News Search")
 
-# User input for API key with cookie support
-api_key = cookies.get("api_key")
-if not api_key:
+# User input for API key with session state support
+if "api_key" not in st.session_state:
     api_key = st.text_input("Enter your News API key:")
     if api_key:
-        cookies.set("api_key", api_key, max_age=365*24*60*60)  # Save API key for 365 days
+        st.session_state.api_key = api_key
+else:
+    api_key = st.session_state.api_key
 
 # User input for search keywords
 search_word = st.text_input("Enter keywords to search for news articles:")
@@ -51,7 +48,7 @@ if st.button("About"):
     st.write("""
     This application allows you to search for news articles using the News API. 
     You can enter your API key to fetch articles based on your search keywords. 
-    Your API key will be securely saved in your browser's cookies for 365 days.
+    Your API key will be saved in the current session.
     
     For more information on securely managing your API keys, visit 
     [this link](https://erath.vercel.app).
