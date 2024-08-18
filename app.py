@@ -1,6 +1,10 @@
 import streamlit as st
 import requests
 import json
+from streamlit_cookies_manager import Cookies
+
+# Initialize cookies manager
+cookies = Cookies()
 
 # Function to fetch news articles
 def fetch_news(api_key, search_word):
@@ -17,28 +21,41 @@ def fetch_news(api_key, search_word):
 st.title("Next News Search")
 
 # User input for API key with cookie support
-api_key = st.text_input("Enter your News API key:", type="password")
-if api_key:
-    st.session_state.api_key = api_key  # Save API key in session state
+api_key = cookies.get("api_key")
+if not api_key:
+    api_key = st.text_input("Enter your News API key:")
+    if api_key:
+        cookies.set("api_key", api_key, max_age=365*24*60*60)  # Save API key for 365 days
 
 # User input for search keywords
 search_word = st.text_input("Enter keywords to search for news articles:")
 
 # Button to fetch news
 if st.button("Search"):
-    if 'api_key' in st.session_state and search_word:
+    if api_key and search_word:
         with st.spinner("Fetching news articles..."):
-            data = fetch_news(st.session_state.api_key, search_word)
+            data = fetch_news(api_key, search_word)
             
         if data and 'articles' in data and len(data['articles']) > 0:
             for article in data['articles']:
-                st.write(f" {article['title']}")
-                st.write(f" {article['description']}")
+                st.write(f"**Title:** {article['title']}")
+                st.write(f"**Description:** {article['description']}")
                 st.write("-" * 19)
         else:
             st.warning("No articles found for your search query.")
     else:
         st.warning("Please enter both your API key and search keywords.")
+
+# About page
+if st.button("About"):
+    st.write("""
+    This application allows you to search for news articles using the News API. 
+    You can enter your API key to fetch articles based on your search keywords. 
+    Your API key will be securely saved in your browser's cookies for 365 days.
+    
+    For more information on securely managing your API keys, visit 
+    [this link](https://erath.vercel.app).
+    """)
 
 # Instructions link for obtaining an API key
 st.markdown("[Click here to get your News API key](https://newsapi.org/register)")
