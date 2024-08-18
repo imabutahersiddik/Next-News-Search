@@ -6,6 +6,11 @@ import json
 def fetch_news(api_key, search_word):
     url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}"
     response = requests.get(url)
+    
+    # Log the response status code and text for debugging
+    st.write(f"Response Status Code: {response.status_code}")
+    st.write(f"Response Text: {response.text}")
+    
     if response.status_code == 200:
         return json.loads(response.text)
     else:
@@ -25,11 +30,13 @@ search_word = st.text_input("Enter keywords to search for news articles:")
 if st.button("Search"):
     if api_key and search_word:
         data = fetch_news(api_key, search_word)
-        if data and 'articles' in data:
+        if data and 'articles' in data and len(data['articles']) > 0:
             for article in data['articles']:
                 st.subheader(article['title'])
                 st.write(article['description'])
                 st.write("-" * 20)
+        else:
+            st.warning("No articles found for your search query.")
     else:
         st.warning("Please enter both your API key and search keywords.")
 
