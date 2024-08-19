@@ -57,9 +57,6 @@ if st.button("About"):
     [Click to continue in Erath](https://erath.vercel.app).
     """)
 
-# Instructions link for obtaining an API key
-st.markdown("[Click here to get your News API key](https://newsapi.org/register)")
-
 # Modal feature
 if "modal_enabled" not in st.session_state:
     st.session_state.modal_enabled = True
