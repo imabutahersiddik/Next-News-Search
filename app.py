@@ -66,7 +66,7 @@ if "modal_enabled" not in st.session_state:
 
 # Function to close the modal
 def close_modal():
-    st.session_state.modal_enabled = True
+    st.session_state.modal_enabled = False
 
 # Modal display
 if st.session_state.modal_enabled:
@@ -74,21 +74,18 @@ if st.session_state.modal_enabled:
     with modal.container():
         st.markdown(
             """
-            <div id="modal" style="display: block; position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+            <div id="modal" style="display: flex; position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
                                  background-color: rgba(0, 0, 0, 0.7); color: white; 
-                                 display: flex; justify-content: center; align-items: center; 
+                                 justify-content: center; align-items: center; 
                                  z-index: 1000;">
                 <div style="text-align: center; background: #333; padding: 20px; border-radius: 8px;">
                     <h2>Welcome to Next News Search!</h2>
                     <p>Use this application to find the latest news articles.</p>
                     <a href="https://newsapi.org/register" style="color: #00ffcc;">Get your API Key here!</a>
                     <br><br>
-                    <button onclick="document.getElementById('modal').style.display='none'; window.location.href = window.location.href;">Close</button>
+                    <button style="padding: 10px; background-color: #00ffcc; border: none; border-radius: 5px; cursor: pointer;" 
+                            onclick="document.getElementById('modal').style.display='none'; window.location.reload();">Close</button>
                 </div>
             </div>
             """, unsafe_allow_html=True
         )
-        
-        # Close the modal when the button is clicked
-        if st.button("Close Modal", key="close_modal", on_click=close_modal):
-            pass
