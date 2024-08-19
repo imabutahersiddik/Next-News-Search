@@ -90,5 +90,5 @@ if st.session_state.modal_enabled:
         )
         
         # Close the modal when the button is clicked
-        if st.button("Close Modal", key="close_modal"):
-            close_modal()
+        if st.button("Close Modal", key="close_modal", on_click=close_modal):
+            pass
