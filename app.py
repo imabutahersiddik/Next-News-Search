@@ -70,21 +70,25 @@ def close_modal():
 
 # Modal display
 if st.session_state.modal_enabled:
-    st.markdown(
-        """
-        <div id="modal" style="display: block; position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
-                             background-color: rgba(0, 0, 0, 0.7); color: white; 
-                             display: flex; justify-content: center; align-items: center; 
-                             z-index: 1000;">
-            <div style="text-align: center; background: #333; padding: 20px; border-radius: 8px;">
-                <h2>Welcome to Next News Search!</h2>
-                <p>Use this application to find the latest news articles.</p>
-                <a href="https://newsapi.org/register" style="color: #00ffcc;">Get your API Key here!</a>
-                <br><br>
-                <button onclick="document.getElementById('modal').style.display='none';">Close</button>
+    modal = st.empty()
+    with modal.container():
+        st.markdown(
+            """
+            <div id="modal" style="display: block; position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+                                 background-color: rgba(0, 0, 0, 0.7); color: white; 
+                                 display: flex; justify-content: center; align-items: center; 
+                                 z-index: 1000;">
+                <div style="text-align: center; background: #333; padding: 20px; border-radius: 8px;">
+                    <h2>Welcome to Next News Search!</h2>
+                    <p>Use this application to find the latest news articles.</p>
+                    <a href="https://newsapi.org/register" style="color: #00ffcc;">Get your API Key here!</a>
+                    <br><br>
+                    <button onclick="document.getElementById('modal').style.display='none'; window.location.href = window.location.href;">Close</button>
+                </div>
             </div>
-        </div>
-        """, unsafe_allow_html=True
-    )
-    # Close the modal when the button is clicked
-    st.button("Close Modal", on_click=close_modal)
+            """, unsafe_allow_html=True
+        )
+        
+        # Close the modal when the button is clicked
+        if st.button("Close Modal", key="close_modal"):
+            close_modal()
