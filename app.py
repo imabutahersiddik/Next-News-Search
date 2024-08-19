@@ -59,3 +59,33 @@ if st.button("About"):
 
 # Instructions link for obtaining an API key
 st.markdown("[Click here to get your News API key](https://newsapi.org/register)")
+
+# Overlay feature
+if "overlay_enabled" not in st.session_state:
+    st.session_state.overlay_enabled = True
+
+# Function to toggle overlay
+def toggle_overlay():
+    st.session_state.overlay_enabled = not st.session_state.overlay_enabled
+
+# Overlay display
+if st.session_state.overlay_enabled:
+    overlay = st.container()
+    with overlay:
+        st.markdown(
+            """
+            <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+                        background-color: rgba(0, 0, 0, 0.7); 
+                        color: white; display: flex; 
+                        justify-content: center; align-items: center; 
+                        z-index: 1000;">
+                <div style="text-align: center;">
+                    <h2>Welcome to Next News Search!</h2>
+                    <p>Use this application to find the latest news articles.</p>
+                    <a href="https://newsapi.org/register" style="color: #00ffcc;">Get your API Key here!</a>
+                    <br><br>
+                    <button onclick="document.getElementById('overlay').style.display='none';">Close</button>
+                </div>
+            </div>
+            """, unsafe_allow_html=True
+        )
