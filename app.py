@@ -66,7 +66,7 @@ if "modal_enabled" not in st.session_state:
 
 # Function to close the modal
 def close_modal():
-    st.session_state.modal_enabled = False
+    st.session_state.modal_enabled = True
 
 # Modal display
 if st.session_state.modal_enabled:
