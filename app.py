@@ -36,8 +36,6 @@ if api_key is None:
     api_key = st.text_input("Enter your News API key:")
     if api_key:
         save_api_key(api_key)  # Save the API key to the database
-else:
-    st.write("")
 
 # User input for search keywords
 search_word = st.text_input("Enter keywords to search for news articles:")
@@ -99,17 +97,26 @@ if st.button("Search"):
 
             for article in articles:
                 if selected_output == "Title and Description":
-                    results += f"### {article['title']}\n{article['description']}\n\n"
+                    st.subheader(article['title'])  # Display the title as a subheader
+                    st.write(article['description'])  # Display the description
+                    results += f"**{article['title']}**\n{article['description']}\n\n"
                 elif selected_output == "Title Only":
-                    results += f"### {article['title']}\n\n"
+                    st.subheader(article['title'])  # Display the title as a subheader
+                    results += f"**{article['title']}**\n\n"
                 elif selected_output == "Description Only":
+                    st.write(article['description'])  # Display the description
                     results += f"{article['description']}\n\n"
                 elif selected_output == "Content Only":
-                    results += f"### {article['title']}\n{article['content']}\n\n"
+                    st.subheader(article['title'])  # Display the title as a subheader
+                    st.write(article['content'])  # Display the content only
+                    results += f"**{article['title']}**\n{article['content']}\n\n"
                 elif selected_output == "Title, Description and Content":
-                    results += f"### {article['title']}\n{article['description']}\n{article['content']}\n\n"
+                    st.subheader(article['title'])  # Display the title as a subheader
+                    st.write(article['description'])  # Display the description
+                    st.write(article['content'])  # Display the full content
+                    results += f"**{article['title']}**\n{article['description']}\n{article['content']}\n\n"
 
-                results += "-" * 20 + "\n"  # Separator line between articles
+                st.write("-" * 20)  # Separator line between articles
 
             # Store results in session state
             st.session_state.results = results
