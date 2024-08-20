@@ -63,9 +63,9 @@ output_options = [
 ]
 selected_output = st.selectbox("Select output format:", output_options)
 
-# Initialize a session state variable to control visibility of the results text area
-if "show_results" not in st.session_state:
-    st.session_state.show_results = False
+# Initialize a session state variable to hold results
+if "results" not in st.session_state:
+    st.session_state.results = ""
 
 # Button to fetch news
 if st.button("Search"):
@@ -105,15 +105,12 @@ if st.button("Search"):
                 results += result + "\n---\n"  # Append to results with a separator
                 st.write(result)  # Display the result
 
-            # Copy All Results button
-            if st.button("Copy All Results"):
-                st.session_state.show_results = True  # Show the results text area
-                st.session_state.results = results  # Store results in session state
+            # Store results in session state
+            st.session_state.results = results
 
-            # Show results in a text area if the button was clicked
-            if st.session_state.show_results:
-                st.text_area("All Results", value=st.session_state.results, height=300)
-                st.success("Results copied to clipboard!")
+            # Show results in an expander
+            with st.expander("Save Results", expanded=Fals):
+                st.text_area("Copy & Save Results", value=st.session_state.results, height=300)
 
             if "show_date" in st.session_state and st.session_state.show_date:
                 for article in articles:
