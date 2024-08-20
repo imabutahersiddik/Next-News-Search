@@ -109,7 +109,7 @@ if st.button("Search"):
             st.session_state.results = results
 
             # Show results in an expander
-            with st.expander("Save Results", expanded=Fals):
+            with st.expander("Save Results", expanded=False):
                 st.text_area("Copy & Save Results", value=st.session_state.results, height=300)
 
             if "show_date" in st.session_state and st.session_state.show_date:
