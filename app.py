@@ -99,15 +99,15 @@ if st.button("Search"):
 
             for article in articles:
                 if selected_output == "Title and Description":
-                    result = f"**{article['title']}**\n{article['description']}\n"
+                    result = f"**{article['title']}**\n\n{article['description']}\n"
                 elif selected_output == "Title Only":
-                    result = f"**{article['title']}**\n"
+                    result = f"**{article['title']}**\n\n"
                 elif selected_output == "Description Only":
                     result = f"{article['description']}\n"
                 elif selected_output == "Full Content":
-                    result = f"**{article['title']}**\n{article['content']}\n"
+                    result = f"**{article['title']}**\n\n{article['content']}\n"
                 elif selected_output == "Title, Description and Content":
-                    result = f"**{article['title']}**\n{article['description']}\n{article['content']}\n"
+                    result = f"**{article['title']}**\n\n{article['description']}\n{article['content']}\n"
 
                 results += result + "\n---\n"  # Append to results with a separator
                 st.write(result)  # Display the result
