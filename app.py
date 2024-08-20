@@ -35,7 +35,11 @@ else:
 # User input for search keywords
 search_word = st.text_input("Enter keywords to search for news articles:")
 
-# Menu options
+# Vertical space for better layout
+st.markdown("<br>", unsafe_allow_html=True)
+
+# Filter options
+st.subheader("Filter News Options")
 menu_options = ["Recent News", "Trending News", "Breaking News", "Oldest News", "Custom Date Range"]
 selected_menu = st.selectbox("Filter News By:", menu_options)
 
