@@ -48,9 +48,9 @@ selected_menu = st.selectbox("Filter News By:", menu_options)
 if selected_menu == "Custom Date Range":
     col1, col2 = st.columns(2)
     with col1:
-        from_date = st.date_input("From Date:")
+        from_date = st.date_input("From Date:", value=datetime.now() - timedelta(days=30))
     with col2:
-        to_date = st.date_input("To Date:")
+        to_date = st.date_input("To Date:", value=datetime.now())
 else:
     from_date = None
     to_date = None
