@@ -2,10 +2,6 @@ import streamlit as st
 import requests
 import json
 from datetime import datetime, timedelta
-from database import create_table, save_api_key, load_api_key
-
-# Initialize database and create table
-create_table()
 
 # Set the page title and layout
 st.set_page_config(page_title="Next News Search", layout="wide")
@@ -28,16 +24,13 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
 # Streamlit app layout
 st.title("Next News Search")
 
-# Load the API key from the database
-api_key = load_api_key()
-
 # User input for API key with session state support
-if api_key is None:
+if "api_key" not in st.session_state:
     api_key = st.text_input("Enter your News API key:")
     if api_key:
-        save_api_key(api_key)  # Save the API key to the database
+        st.session_state.api_key = api_key
 else:
-    st.write("API Key loaded from database.")
+    api_key = st.session_state.api_key
 
 # User input for search keywords
 search_word = st.text_input("Enter keywords to search for news articles:")
