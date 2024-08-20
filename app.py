@@ -21,55 +21,6 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
         st.error("Failed to fetch news articles. Please check your API key and try again.")
         return None
 
-# Function to save results in different formats
-def save_results(articles, format_type):
-    if format_type == "TXT":
-        txt_content = ""
-        for article in articles:
-            txt_content += f"Title: {article['title']}\n"
-            txt_content += f"Description: {article['description']}\n"
-            txt_content += f"Published: {article['publishedAt']}\n\n"
-        
-        st.download_button(
-            label="Download results as TXT",
-            data=txt_content,
-            file_name="search_results.txt",
-            mime="text/plain",
-        )
-
-    elif format_type == "HTML":
-        html_content = "<html><head><title>{}</title></head><body>".format(articles[0]['title'])
-        for article in articles:
-            html_content += f"<h2>{article['title']}</h2>"
-            html_content += f"<p>{article['description']}</p>"
-            html_content += f"<p>Published: {article['publishedAt']}</p><hr>"
-        html_content += "</body></html>"
-
-        st.download_button(
-            label="Download results as HTML",
-            data=html_content,
-            file_name="search_results.html",
-            mime="text/html",
-        )
-
-    elif format_type == "Erath":
-        html_content = "<html><body>"
-        for article in articles:
-            html_content += f"<h2>{article['title']}</h2>"
-            html_content += f"<p>{article['description']}</p>"
-            html_content += f"<p>Published: {article['publishedAt']}</p><hr>"
-        html_content += "</body></html>"
-
-        st.text_area("Copy the HTML code below to save it in Erath:", value=html_content, height=300)
-        st.markdown("""
-        **Instructions to save in Erath:**
-        1. Copy the HTML code above.
-        2. Go to [Erath](https://erath.vercel.app).
-        3. Paste your HTML code in the provided textarea.
-        4. Click the "Erath" button to submit your code.
-        5. You will receive a link to your hosted web page. Bookmark this link for easy access.
-        """)
-
 # Streamlit app layout
 st.title("Next News Search")
 
@@ -102,8 +53,14 @@ else:
 # Number of articles to fetch
 num_articles = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=19)
 
-# Output options
-output_options = ["Title and Description", "Title Only", "Description Only", "Full Content", "Title and Full Content"]
+# Output options for displaying content
+output_options = [
+    "Title and Description",
+    "Title Only",
+    "Description Only",
+    "Content Only",
+    "Title, Description and Content"
+]
 selected_output = st.selectbox("Select output format:", output_options)
 
 # Button to fetch news
@@ -127,29 +84,31 @@ if st.button("Search"):
             
         if data and 'articles' in data and len(data['articles']) > 0:
             articles = data['articles']
+            results = ""  # Initialize a string to hold all results
+
             for article in articles:
                 if selected_output == "Title and Description":
-                    st.write(f"**{article['title']}**")
-                    st.write(f"{article['description']}")
+                    result = f"**{article['title']}**\n{article['description']}\n"
                 elif selected_output == "Title Only":
-                    st.write(f"**{article['title']}**")
+                    result = f"**{article['title']}**\n"
                 elif selected_output == "Description Only":
-                    st.write(f"{article['description']}")
+                    result = f"{article['description']}\n"
                 elif selected_output == "Full Content":
-                    st.write(f"**{article['title']}**")
-                    st.write(f"{article['content']}")
-                elif selected_output == "Title and Full Content":
-                    st.write(f"**{article['title']}**")
-                    st.write(f"{article['content']}")
-                
-                if "show_date" in st.session_state and st.session_state.show_date:
+                    result = f"**{article['title']}**\n{article['content']}\n"
+                elif selected_output == "Title, Description and Content":
+                    result = f"**{article['title']}**\n{article['description']}\n{article['content']}\n"
+
+                results += result + "\n---\n"  # Append to results with a separator
+                st.write(result)  # Display the result
+
+            # Copy All Results button
+            st.text_area("All Results", value=results, height=300)
+            st.button("Copy All Results", on_click=lambda: st.session_state.clipboard = results)
+
+            if "show_date" in st.session_state and st.session_state.show_date:
+                for article in articles:
                     st.write(f"Published: {article['publishedAt']}")
                 st.write("-" * 19)
-
-            # Save options
-            save_format = st.selectbox("Select format to save results:", ["Select Format", "TXT", "HTML", "Erath"])
-            if save_format != "Select Format":
-                save_results(articles, save_format)
 
         else:
             st.warning("No articles found for your search query.")
@@ -162,9 +121,6 @@ if st.button("About"):
     This application allows you to search for news articles using the News API. 
     You can enter your API key to fetch articles based on your search keywords. 
     Your API key will be saved in the current session.
-    
-    Save your API keys securely, in Erath 
-    [Click to continue in Erath](https://erath.vercel.app).
     """)
 
 # Modal feature
