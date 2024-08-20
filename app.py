@@ -1,7 +1,8 @@
-import streamlit as st
+ession_state.show_date = show_dateimport streamlit as st
 import requests
 import json
 from datetime import datetime, timedelta
+from streamlit_extras.add_vertical_space import add_vertical_space
 
 # Set the page title and layout
 st.set_page_config(page_title="Next News Search", layout="wide")
@@ -32,20 +33,19 @@ if "api_key" not in st.session_state:
 else:
     api_key = st.session_state.api_key
 
+# Sidebar for filter options
+st.sidebar.header("Filter News Options")
+
 # User input for search keywords
-search_word = st.text_input("Enter keywords to search for news articles:")
+search_word = st.sidebar.text_input("Enter keywords to search for news articles:")
 
-# Vertical space for better layout
-st.markdown("<br>", unsafe_allow_html=True)
-
-# Filter options
-st.subheader("Filter News Options")
+# Menu options
 menu_options = ["Recent News", "Trending News", "Breaking News", "Oldest News", "Custom Date Range"]
-selected_menu = st.selectbox("Filter News By:", menu_options)
+selected_menu = st.sidebar.selectbox("Filter News By:", menu_options)
 
 # Date range selection
 if selected_menu == "Custom Date Range":
-    col1, col2 = st.columns(2)
+    col1, col2 = st.sidebar.columns(2)
     with col1:
         from_date = st.date_input("From Date:")
     with col2:
@@ -55,7 +55,7 @@ else:
     to_date = None
 
 # Number of articles to fetch
-num_articles = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=19)
+num_articles = st.sidebar.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=19)
 
 # Output options for displaying content
 output_options = [
@@ -65,11 +65,14 @@ output_options = [
     "Full Content",
     "Title, Description and Content"
 ]
-selected_output = st.selectbox("Select output format:", output_options)
+selected_output = st.sidebar.selectbox("Select output format:", output_options)
 
 # Initialize a session state variable to hold results
 if "results" not in st.session_state:
     st.session_state.results = ""
+
+# Add vertical space in the main area
+add_vertical_space(2)
 
 # Button to fetch news
 if st.button("Search"):
