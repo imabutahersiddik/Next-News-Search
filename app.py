@@ -135,13 +135,7 @@ if st.button("About"):
     This application allows you to search for news articles using the News API. 
     You can enter your API key to fetch articles based on your search keywords. 
     Your API key will be saved in the current session.
-    
-    Save your API keys securely, in Erath 
-    [Click to continue in Erath](https://erath.vercel.app).
     """)
-
-# Instructions link for obtaining an API key
-st.markdown("[Click here to get your News API key](https://newsapi.org/register)")
 
 # Modal feature
 if "modal_enabled" not in st.session_state:
@@ -151,27 +145,13 @@ if "modal_enabled" not in st.session_state:
 def close_modal():
     st.session_state.modal_enabled = False
 
-# Modal display
+# Modal display using expander
 if st.session_state.modal_enabled:
-    modal = st.empty()
-    with modal.container():
-        st.markdown(
-            """
-            <div id="modal" style="display: flex; position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
-                                 background-color: rgba(0, 0, 0, 0.7); color: white; 
-                                 justify-content: center; align-items: center; 
-                                 z-index: 1000;">
-                <div style="text-align: center; background: #333; padding: 20px; border-radius: 8px;">
-                    <h2>Welcome to Next News Search!</h2>
-                    <p>Use this application to find the latest news articles.</p>
-                    <a href="https://newsapi.org/register" style="color: #00ffcc;">Get your API Key here!</a>
-                    <br><br>
-                    <button style="padding: 10px; background-color: #00ffcc; border: none; border-radius: 5px; cursor: pointer;" 
-                            onclick="document.getElementById('modal').style.display='none'; window.location.reload();">Close</button>
-                </div>
-            </div>
-            """, unsafe_allow_html=True
-        )
+    with st.expander("Welcome to Next News Search!", expanded=True):
+        st.write("Use this application to find the latest news articles.")
+        st.markdown("[Get your API Key here!](https://newsapi.org/register)")
+        if st.button("Close"):
+            close_modal()
 
 # Toggle to show/hide published date
 if "show_date" not in st.session_state:
