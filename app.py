@@ -2,7 +2,6 @@ import streamlit as st
 import requests
 import json
 from datetime import datetime, timedelta
-from menu import render_menu
 
 # Set the page title and layout
 st.set_page_config(page_title="Next News Search", layout="wide")
@@ -36,6 +35,34 @@ else:
 # User input for search keywords
 search_word = st.text_input("Enter keywords to search for news articles:")
 
+# Menu options
+menu_options = ["Recent News", "Trending News", "Breaking News", "Oldest News", "Custom Date Range"]
+selected_menu = st.selectbox("Filter News By:", menu_options)
+
+# Date range selection
+if selected_menu == "Custom Date Range":
+    col1, col2 = st.columns(2)
+    with col1:
+        from_date = st.date_input("From Date:")
+    with col2:
+        to_date = st.date_input("To Date:")
+else:
+    from_date = None
+    to_date = None
+
+# Number of articles to fetch
+num_articles = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=19)
+
+# Output options for displaying content
+output_options = [
+    "Title and Description",
+    "Title Only",
+    "Description Only",
+    "Full Content",
+    "Title, Description and Content"
+]
+selected_output = st.selectbox("Select output format:", output_options)
+
 # Initialize a session state variable to hold results
 if "results" not in st.session_state:
     st.session_state.results = ""
@@ -44,18 +71,38 @@ if "results" not in st.session_state:
 if st.button("Search"):
     if api_key and search_word:
         with st.spinner("Fetching news articles..."):
-            sort_by = 'publishedAt'  # Default sort
-            from_date, to_date = None, None
+            if selected_menu == "Recent News":
+                sort_by = 'publishedAt'
+            elif selected_menu == "Trending News":
+                sort_by = 'popularity'
+            elif selected_menu == "Breaking News":
+                sort_by = 'relevancy'
+            elif selected_menu == "Oldest News":
+                sort_by = 'publishedAt'
+                from_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+                to_date = datetime.now().strftime('%Y-%m-%d')
+            else:
+                sort_by = 'relevancy'
             
-            data = fetch_news(api_key, search_word, sort_by, from_date, to_date)
-
+            data = fetch_news(api_key, search_word, sort_by, from_date, to_date, num_articles)
+            
         if data and 'articles' in data and len(data['articles']) > 0:
             articles = data['articles']
             results = ""  # Initialize a string to hold all results
 
             for article in articles:
-                result = f"**{article['title']}**\n{article['description']}\n---\n"
-                results += result
+                if selected_output == "Title and Description":
+                    result = f"**{article['title']}**\n{article['description']}\n"
+                elif selected_output == "Title Only":
+                    result = f"**{article['title']}**\n"
+                elif selected_output == "Description Only":
+                    result = f"{article['description']}\n"
+                elif selected_output == "Full Content":
+                    result = f"**{article['title']}**\n{article['content']}\n"
+                elif selected_output == "Title, Description and Content":
+                    result = f"**{article['title']}**\n{article['description']}\n{article['content']}\n"
+
+                results += result + "\n---\n"  # Append to results with a separator
                 st.write(result)  # Display the result
 
             # Store results in session state
@@ -64,10 +111,24 @@ if st.button("Search"):
             # Show results in an expander
             with st.expander("Save Results", expanded=True):
                 st.text_area("Copy Results", value=st.session_state.results, height=300)
+
+            if "show_date" in st.session_state and st.session_state.show_date:
+                for article in articles:
+                    st.write(f"Published: {article['publishedAt']}")
+                st.write("-" * 19)
+
         else:
             st.warning("No articles found for your search query.")
     else:
         st.warning("Please enter both your API key and search keywords.")
+
+# About page
+if st.button("About"):
+    st.write("""
+    This application allows you to search for news articles using the News API. 
+    You can enter your API key to fetch articles based on your search keywords. 
+    Your API key will be saved in the current session.
+    """)
 
 # Modal feature
 if "modal_enabled" not in st.session_state:
@@ -91,10 +152,3 @@ if "show_date" not in st.session_state:
 
 show_date = st.checkbox("Show Published Date", value=st.session_state.show_date)
 st.session_state.show_date = show_date
-
-# Initialize session state for page
-if "page" not in st.session_state:
-    st.session_state.page = "recent_news"
-
-# Render the menu
-render_menu()
