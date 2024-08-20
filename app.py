@@ -37,7 +37,7 @@ if api_key is None:
     if api_key:
         save_api_key(api_key)  # Save the API key to the database
 else:
-    st.write("API Key loaded from database.")
+    st.write("")
 
 # User input for search keywords
 search_word = st.text_input("Enter keywords to search for news articles:")
@@ -65,7 +65,7 @@ output_options = [
     "Title and Description",
     "Title Only",
     "Description Only",
-    "Full Content",
+    "Content Only",
     "Title, Description and Content"
 ]
 selected_output = st.selectbox("Select output format:", output_options)
@@ -105,9 +105,9 @@ if st.button("Search"):
                     st.subheader(article['title'])  # Display the title as a subheader
                 elif selected_output == "Description Only":
                     st.write(article['description'])  # Display the description
-                elif selected_output == "Full Content":
+                elif selected_output == "Content Only":
                     st.subheader(article['title'])  # Display the title as a subheader
-                    st.write(article['content'])  # Display the full content
+                    st.write(article['content'])  # Display the content only
                 elif selected_output == "Title, Description and Content":
                     st.subheader(article['title'])  # Display the title as a subheader
                     st.write(article['description'])  # Display the description
