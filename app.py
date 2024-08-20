@@ -43,7 +43,7 @@ def add_keyword_input():
 
 # Display keyword inputs
 for i in range(len(st.session_state.search_words)):
-    st.session_state.search_words[i] = st.text_input(f"Enter keywords to search for news articles:", value=st.session_state.search_words[i])
+    st.session_state.search_words = st.text_input(f"Enter keywords to search for news articles:", value=st.session_state.search_words)
     
 # Button to add another keyword input
 if st.button("Add Keyword"):
