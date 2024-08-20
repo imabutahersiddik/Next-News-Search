@@ -60,6 +60,20 @@ else:
 # Number of articles to fetch
 num_articles = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=19)
 
+# Output options for displaying content
+output_options = [
+    "Title and Description",
+    "Title Only",
+    "Description Only",
+    "Full Content",
+    "Title, Description and Content"
+]
+selected_output = st.selectbox("Select output format:", output_options)
+
+# Initialize a session state variable to hold results
+if "results" not in st.session_state:
+    st.session_state.results = ""
+
 # Button to fetch news
 if st.button("Search"):
     if api_key and search_word:
@@ -80,11 +94,36 @@ if st.button("Search"):
             data = fetch_news(api_key, search_word, sort_by, from_date, to_date, num_articles)
             
         if data and 'articles' in data and len(data['articles']) > 0:
-            for article in data['articles']:
-                # Here we modify the output to match the old app's look
-                st.write(f"**{article['title']}**")
-                st.write(f"{article['description']}")
+            articles = data['articles']
+            results = ""  # Initialize a string to hold all results
+
+            for article in articles:
+                if selected_output == "Title and Description":
+                    result = f"**{article['title']}**\n{article['description']}\n"
+                elif selected_output == "Title Only":
+                    result = f"**{article['title']}**\n"
+                elif selected_output == "Description Only":
+                    result = f"{article['description']}\n"
+                elif selected_output == "Full Content":
+                    result = f"**{article['title']}**\n{article['content']}\n"
+                elif selected_output == "Title, Description and Content":
+                    result = f"**{article['title']}**\n{article['description']}\n{article['content']}\n"
+
+                results += result + "\n---\n"  # Append to results with a separator
+                st.write(result)  # Display the result
+
+            # Store results in session state
+            st.session_state.results = results
+
+            # Show results in an expander
+            with st.expander("Save Results", expanded=True):
+                st.text_area("Copy Results", value=st.session_state.results, height=300)
+
+            if "show_date" in st.session_state and st.session_state.show_date:
+                for article in articles:
+                    st.write(f"Published: {article['publishedAt']}")
                 st.write("-" * 19)
+
         else:
             st.warning("No articles found for your search query.")
     else:
@@ -133,3 +172,10 @@ if st.session_state.modal_enabled:
             </div>
             """, unsafe_allow_html=True
         )
+
+# Toggle to show/hide published date
+if "show_date" not in st.session_state:
+    st.session_state.show_date = False
+
+show_date = st.checkbox("Show Published Date", value=st.session_state.show_date)
+st.session_state.show_date = show_date
