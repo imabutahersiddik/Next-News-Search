@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 st.set_page_config(page_title="Next News Search", layout="wide")
 
 # Function to fetch news articles
-def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_date=None):
-    url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}&sortBy={sort_by}"
+def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_date=None, page_size=19):
+    url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}&sortBy={sort_by}&pageSize={page_size}"
     
     if from_date and to_date:
         url += f"&from={from_date}&to={to_date}"
@@ -50,6 +50,13 @@ else:
     from_date = None
     to_date = None
 
+# Number of articles to fetch
+num_articles = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=19)
+
+# Output options
+output_options = ["Title and Description", "Title Only", "Description Only", "Full Content", "Title and Full Content"]
+selected_output = st.selectbox("Select output format:", output_options)
+
 # Button to fetch news
 if st.button("Search"):
     if api_key and search_word:
@@ -67,12 +74,24 @@ if st.button("Search"):
             else:
                 sort_by = 'relevancy'
             
-            data = fetch_news(api_key, search_word, sort_by, from_date, to_date)
+            data = fetch_news(api_key, search_word, sort_by, from_date, to_date, num_articles)
             
         if data and 'articles' in data and len(data['articles']) > 0:
             for article in data['articles']:
-                st.write(f"**{article['title']}**")
-                st.write(f"{article['description']}")
+                if selected_output == "Title and Description":
+                    st.write(f"**{article['title']}**")
+                    st.write(f"{article['description']}")
+                elif selected_output == "Title Only":
+                    st.write(f"**{article['title']}**")
+                elif selected_output == "Description Only":
+                    st.write(f"{article['description']}")
+                elif selected_output == "Full Content":
+                    st.write(f"**{article['title']}**")
+                    st.write(f"{article['content']}")
+                elif selected_output == "Title and Full Content":
+                    st.write(f"**{article['title']}**")
+                    st.write(f"{article['content']}")
+                
                 if "show_date" in st.session_state and st.session_state.show_date:
                     st.write(f"Published: {article['publishedAt']}")
                 st.write("-" * 19)
