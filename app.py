@@ -2,8 +2,6 @@ import streamlit as st
 import requests
 import json
 from datetime import datetime, timedelta
-from fpdf import FPDF
-import os
 
 # Set the page title and layout
 st.set_page_config(page_title="Next News Search", layout="wide")
@@ -25,23 +23,7 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
 
 # Function to save results in different formats
 def save_results(articles, format_type):
-    if format_type == "PDF":
-        pdf = FPDF()
-        pdf.set_auto_page_break(auto=True, margin=15)
-        pdf.add_page()
-        pdf.set_font("Arial", size=12)
-
-        for article in articles:
-            pdf.cell(200, 10, txt=f"Title: {article['title']}", ln=True)
-            pdf.multi_cell(0, 10, txt=f"Description: {article['description']}")
-            pdf.cell(200, 10, txt=f"Published: {article['publishedAt']}", ln=True)
-            pdf.cell(0, 10, '', ln=True)  # Add a blank line
-
-        pdf_file_path = "search_results.pdf"
-        pdf.output(pdf_file_path)
-        st.success(f"Results saved as {pdf_file_path}. You can download it [here](./{pdf_file_path}).")
-
-    elif format_type == "TXT":
+    if format_type == "TXT":
         with open("search_results.txt", "w") as f:
             for article in articles:
                 f.write(f"Title: {article['title']}\n")
@@ -158,7 +140,7 @@ if st.button("Search"):
                 st.write("-" * 19)
 
             # Save options
-            save_format = st.selectbox("Select format to save results:", ["Select Format", "PDF", "TXT", "HTML", "Erath"])
+            save_format = st.selectbox("Select format to save results:", ["Select Format", "TXT", "HTML", "Erath"])
             if save_format != "Select Format":
                 save_results(articles, save_format)
 
