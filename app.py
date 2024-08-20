@@ -99,21 +99,17 @@ if st.button("Search"):
 
             for article in articles:
                 if selected_output == "Title and Description":
-                    st.subheader(article['title'])  # Display the title as a subheader
-                    st.write(article['description'])  # Display the description
+                    results += f"### {article['title']}\n{article['description']}\n\n"
                 elif selected_output == "Title Only":
-                    st.subheader(article['title'])  # Display the title as a subheader
+                    results += f"### {article['title']}\n\n"
                 elif selected_output == "Description Only":
-                    st.write(article['description'])  # Display the description
+                    results += f"{article['description']}\n\n"
                 elif selected_output == "Content Only":
-                    st.subheader(article['title'])  # Display the title as a subheader
-                    st.write(article['content'])  # Display the content only
+                    results += f"### {article['title']}\n{article['content']}\n\n"
                 elif selected_output == "Title, Description and Content":
-                    st.subheader(article['title'])  # Display the title as a subheader
-                    st.write(article['description'])  # Display the description
-                    st.write(article['content'])  # Display the full content
+                    results += f"### {article['title']}\n{article['description']}\n{article['content']}\n\n"
 
-                st.write("-" * 20)  # Separator line between articles
+                results += "-" * 20 + "\n"  # Separator line between articles
 
             # Store results in session state
             st.session_state.results = results
