@@ -58,7 +58,7 @@ output_options = [
     "Title and Description",
     "Title Only",
     "Description Only",
-    "Content Only",
+    "Full Content",
     "Title, Description and Content"
 ]
 selected_output = st.selectbox("Select output format:", output_options)
@@ -103,7 +103,9 @@ if st.button("Search"):
 
             # Copy All Results button
             st.text_area("All Results", value=results, height=300)
-            st.button("Copy All Results", on_click=lambda: st.session_state.clipboard = results)
+            if st.button("Copy All Results"):
+                st.session_state['clipboard'] = results
+                st.success("Results copied to clipboard!")
 
             if "show_date" in st.session_state and st.session_state.show_date:
                 for article in articles:
