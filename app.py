@@ -7,8 +7,9 @@ from datetime import datetime, timedelta
 st.set_page_config(page_title="Next News Search", layout="wide")
 
 # Function to fetch news articles
-def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_date=None, page_size=19):
-    url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}&sortBy={sort_by}&pageSize={page_size}"
+def fetch_news(api_key, search_words, sort_by='relevancy', from_date=None, to_date=None, page_size=19):
+    search_query = '+'.join(search_words)  # Combine keywords with '+' for the query
+    url = f"https://newsapi.org/v2/everything?q={search_query}&apiKey={api_key}&sortBy={sort_by}&pageSize={page_size}"
     
     if from_date and to_date:
         url += f"&from={from_date}&to={to_date}"
@@ -33,7 +34,20 @@ else:
     api_key = st.session_state.api_key
 
 # User input for search keywords
-search_word = st.text_input("Enter keywords to search for news articles:")
+if "search_words" not in st.session_state:
+    st.session_state.search_words = [""]  # Initialize with one empty keyword
+
+# Function to add a new keyword input
+def add_keyword_input():
+    st.session_state.search_words.append("")  # Add a new empty keyword
+
+# Display keyword inputs
+for i in range(len(st.session_state.search_words)):
+    st.session_state.search_words[i] = st.text_input(f"Enter keyword {i + 1}:", value=st.session_state.search_words[i])
+    
+# Button to add another keyword input
+if st.button("Add Keyword"):
+    add_keyword_input()
 
 # Menu options
 menu_options = ["Recent News", "Trending News", "Breaking News", "Oldest News", "Custom Date Range"]
@@ -69,7 +83,7 @@ if "results" not in st.session_state:
 
 # Button to fetch news
 if st.button("Search"):
-    if api_key and search_word:
+    if api_key and any(st.session_state.search_words):
         with st.spinner("Fetching news articles..."):
             if selected_menu == "Recent News":
                 sort_by = 'publishedAt'
@@ -84,7 +98,7 @@ if st.button("Search"):
             else:
                 sort_by = 'relevancy'
             
-            data = fetch_news(api_key, search_word, sort_by, from_date, to_date, num_articles)
+            data = fetch_news(api_key, st.session_state.search_words, sort_by, from_date, to_date, num_articles)
             
         if data and 'articles' in data and len(data['articles']) > 0:
             articles = data['articles']
@@ -120,7 +134,7 @@ if st.button("Search"):
         else:
             st.warning("No articles found for your search query.")
     else:
-        st.warning("Please enter both your API key and search keywords.")
+        st.warning("Please enter your API key and at least one keyword.")
 
 # About page
 if st.button("About"):
