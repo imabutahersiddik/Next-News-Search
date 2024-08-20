@@ -2,6 +2,8 @@ import streamlit as st
 import requests
 import json
 from datetime import datetime, timedelta
+from fpdf import FPDF
+import os
 
 # Set the page title and layout
 st.set_page_config(page_title="Next News Search", layout="wide")
@@ -20,6 +22,64 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
     else:
         st.error("Failed to fetch news articles. Please check your API key and try again.")
         return None
+
+# Function to save results in different formats
+def save_results(articles, format_type):
+    if format_type == "PDF":
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
+        pdf.set_font("Arial", size=12)
+
+        for article in articles:
+            pdf.cell(200, 10, txt=f"Title: {article['title']}", ln=True)
+            pdf.multi_cell(0, 10, txt=f"Description: {article['description']}")
+            pdf.cell(200, 10, txt=f"Published: {article['publishedAt']}", ln=True)
+            pdf.cell(0, 10, '', ln=True)  # Add a blank line
+
+        pdf_file_path = "search_results.pdf"
+        pdf.output(pdf_file_path)
+        st.success(f"Results saved as {pdf_file_path}. You can download it [here](./{pdf_file_path}).")
+
+    elif format_type == "TXT":
+        with open("search_results.txt", "w") as f:
+            for article in articles:
+                f.write(f"Title: {article['title']}\n")
+                f.write(f"Description: {article['description']}\n")
+                f.write(f"Published: {article['publishedAt']}\n\n")
+        
+        st.success("Results saved as search_results.txt. You can download it [here](./search_results.txt).")
+
+    elif format_type == "HTML":
+        html_content = "<html><head><title>{}</title></head><body>".format(articles[0]['title'])
+        for article in articles:
+            html_content += f"<h2>{article['title']}</h2>"
+            html_content += f"<p>{article['description']}</p>"
+            html_content += f"<p>Published: {article['publishedAt']}</p><hr>"
+        html_content += "</body></html>"
+
+        with open("search_results.html", "w") as f:
+            f.write(html_content)
+
+        st.success("Results saved as search_results.html. You can download it [here](./search_results.html).")
+
+    elif format_type == "Erath":
+        html_content = "<html><body>"
+        for article in articles:
+            html_content += f"<h2>{article['title']}</h2>"
+            html_content += f"<p>{article['description']}</p>"
+            html_content += f"<p>Published: {article['publishedAt']}</p><hr>"
+        html_content += "</body></html>"
+
+        st.text_area("Copy the HTML code below to save it in Erath:", value=html_content, height=300)
+        st.markdown("""
+        **Instructions to save in Erath:**
+        1. Copy the HTML code above.
+        2. Go to [Erath](https://erath.vercel.app).
+        3. Paste your HTML code in the provided textarea.
+        4. Click the "Erath" button to submit your code.
+        5. You will receive a link to your hosted web page. Bookmark this link for easy access.
+        """)
 
 # Streamlit app layout
 st.title("Next News Search")
@@ -77,7 +137,8 @@ if st.button("Search"):
             data = fetch_news(api_key, search_word, sort_by, from_date, to_date, num_articles)
             
         if data and 'articles' in data and len(data['articles']) > 0:
-            for article in data['articles']:
+            articles = data['articles']
+            for article in articles:
                 if selected_output == "Title and Description":
                     st.write(f"**{article['title']}**")
                     st.write(f"{article['description']}")
@@ -95,6 +156,12 @@ if st.button("Search"):
                 if "show_date" in st.session_state and st.session_state.show_date:
                     st.write(f"Published: {article['publishedAt']}")
                 st.write("-" * 19)
+
+            # Save options
+            save_format = st.selectbox("Select format to save results:", ["Select Format", "PDF", "TXT", "HTML", "Erath"])
+            if save_format != "Select Format":
+                save_results(articles, save_format)
+
         else:
             st.warning("No articles found for your search query.")
     else:
