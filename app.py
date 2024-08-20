@@ -24,13 +24,18 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
 # Function to save results in different formats
 def save_results(articles, format_type):
     if format_type == "TXT":
-        with open("search_results.txt", "w") as f:
-            for article in articles:
-                f.write(f"Title: {article['title']}\n")
-                f.write(f"Description: {article['description']}\n")
-                f.write(f"Published: {article['publishedAt']}\n\n")
+        txt_content = ""
+        for article in articles:
+            txt_content += f"Title: {article['title']}\n"
+            txt_content += f"Description: {article['description']}\n"
+            txt_content += f"Published: {article['publishedAt']}\n\n"
         
-        st.success("Results saved as search_results.txt. You can download it [here](./search_results.txt).")
+        st.download_button(
+            label="Download results as TXT",
+            data=txt_content,
+            file_name="search_results.txt",
+            mime="text/plain",
+        )
 
     elif format_type == "HTML":
         html_content = "<html><head><title>{}</title></head><body>".format(articles[0]['title'])
@@ -40,10 +45,12 @@ def save_results(articles, format_type):
             html_content += f"<p>Published: {article['publishedAt']}</p><hr>"
         html_content += "</body></html>"
 
-        with open("search_results.html", "w") as f:
-            f.write(html_content)
-
-        st.success("Results saved as search_results.html. You can download it [here](./search_results.html).")
+        st.download_button(
+            label="Download results as HTML",
+            data=html_content,
+            file_name="search_results.html",
+            mime="text/html",
+        )
 
     elif format_type == "Erath":
         html_content = "<html><body>"
