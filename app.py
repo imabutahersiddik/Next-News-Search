@@ -63,6 +63,10 @@ output_options = [
 ]
 selected_output = st.selectbox("Select output format:", output_options)
 
+# Initialize a session state variable to control visibility of the results text area
+if "show_results" not in st.session_state:
+    st.session_state.show_results = False
+
 # Button to fetch news
 if st.button("Search"):
     if api_key and search_word:
@@ -102,9 +106,13 @@ if st.button("Search"):
                 st.write(result)  # Display the result
 
             # Copy All Results button
-            st.text_area("All Results", value=results, height=300)
             if st.button("Copy All Results"):
-                st.session_state['clipboard'] = results
+                st.session_state.show_results = True  # Show the results text area
+                st.session_state.results = results  # Store results in session state
+
+            # Show results in a text area if the button was clicked
+            if st.session_state.show_results:
+                st.text_area("All Results", value=st.session_state.results, height=300)
                 st.success("Results copied to clipboard!")
 
             if "show_date" in st.session_state and st.session_state.show_date:
