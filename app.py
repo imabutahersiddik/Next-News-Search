@@ -22,12 +22,8 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
         st.error("Failed to fetch news articles. Please check your API key and try again.")
         return None
 
-# Initialize session state for page
-if "page" not in st.session_state:
-    st.session_state.page = "recent_news"
-
-# Render the menu
-render_menu()
+# Streamlit app layout
+st.title("Next News Search")
 
 # User input for API key with session state support
 if "api_key" not in st.session_state:
@@ -51,20 +47,6 @@ if st.button("Search"):
             sort_by = 'publishedAt'  # Default sort
             from_date, to_date = None, None
             
-            if st.session_state.page == "recent_news":
-                sort_by = 'publishedAt'
-            elif st.session_state.page == "trending_news":
-                sort_by = 'popularity'
-            elif st.session_state.page == "breaking_news":
-                sort_by = 'relevancy'
-            elif st.session_state.page == "oldest_news":
-                sort_by = 'publishedAt'
-                from_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
-                to_date = datetime.now().strftime('%Y-%m-%d')
-            elif st.session_state.page == "custom_date_range":
-                from_date = st.date_input("From Date:", value=datetime.now() - timedelta(days=30))
-                to_date = st.date_input("To Date:", value=datetime.now())
-            
             data = fetch_news(api_key, search_word, sort_by, from_date, to_date)
 
         if data and 'articles' in data and len(data['articles']) > 0:
@@ -86,3 +68,33 @@ if st.button("Search"):
             st.warning("No articles found for your search query.")
     else:
         st.warning("Please enter both your API key and search keywords.")
+
+# Modal feature
+if "modal_enabled" not in st.session_state:
+    st.session_state.modal_enabled = True
+
+# Function to close the modal
+def close_modal():
+    st.session_state.modal_enabled = False
+
+# Modal display using expander
+if st.session_state.modal_enabled:
+    with st.expander("Welcome to Next News Search!", expanded=True):
+        st.write("Use this application to find the latest news articles.")
+        st.markdown("[Get your API Key here!](https://newsapi.org/register)")
+        if st.button("Close"):
+            close_modal()
+
+# Toggle to show/hide published date
+if "show_date" not in st.session_state:
+    st.session_state.show_date = False
+
+show_date = st.checkbox("Show Published Date", value=st.session_state.show_date)
+st.session_state.show_date = show_date
+
+# Initialize session state for page
+if "page" not in st.session_state:
+    st.session_state.page = "recent_news"
+
+# Render the menu
+render_menu()
