@@ -10,6 +10,8 @@ create_table()
 # Set the page title and layout
 st.set_page_config(page_title="Next News Search", layout="wide")
 
+# Add meta description
+st.markdown('<meta name="description" content="Next News Search is a user-friendly application that allows you to search for the latest news articles using the News API. Enter your keywords and API key to fetch relevant news articles effortlessly." />', unsafe_allow_html=True)
 # Function to fetch news articles
 def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_date=None, page_size=19):
     url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}&sortBy={sort_by}&pageSize={page_size}"
