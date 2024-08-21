@@ -54,11 +54,22 @@ def save_user_preferences(preferences):
     conn = sqlite3.connect('news_search.db')
     cursor = conn.cursor()
     
-    cursor.execute('DELETE FROM user_preferences')  # Clear existing preferences
-    cursor.execute('''
-        INSERT INTO user_preferences (language, sources, output_format)
-        VALUES (?, ?, ?)
-    ''', (preferences['language'], ','.join(preferences['sources']), preferences['output_format']))
+    # Check if there are any existing preferences
+    cursor.execute('SELECT COUNT(*) FROM user_preferences')
+    existing_preferences = cursor.fetchone()[0]
+    
+    if existing_preferences > 0:
+        # Update existing preferences
+        cursor.execute('''
+            UPDATE user_preferences
+            SET language = ?, sources = ?, output_format = ?
+        ''', (preferences['language'], ','.join(preferences['sources']), preferences['output_format']))
+    else:
+        # Insert new preferences
+        cursor.execute('''
+            INSERT INTO user_preferences (language, sources, output_format)
+            VALUES (?, ?, ?)
+        ''', (preferences['language'], ','.join(preferences['sources']), preferences['output_format']))
     
     conn.commit()
     conn.close()
