@@ -59,6 +59,16 @@ if api_key is None:
 # Create tabs for Search and Filters
 tabs = st.tabs(["Search", "Filters"])
 
+# Initialize session state for filters if not already done
+if "filters" not in st.session_state:
+    st.session_state.filters = {
+        "language": "",
+        "sources": [],
+        "from_date": datetime.now() - timedelta(days=30),
+        "to_date": datetime.now(),
+        "num_articles": 19
+    }
+
 # Search Tab
 with tabs[0]:
     st.header("Search News Articles")
@@ -83,14 +93,20 @@ with tabs[0]:
     if st.button("Search"):
         if api_key and search_word:
             with st.spinner("Fetching news articles..."):
-                # Load user preferences from the database
-                user_preferences = load_user_preferences()
-                language = user_preferences['language'] if user_preferences else None
-                sources = user_preferences['sources'] if user_preferences else []
+                # Use filters from session state
+                language = st.session_state.filters['language']
+                sources = st.session_state.filters['sources']
+                from_date = st.session_state.filters['from_date']
+                to_date = st.session_state.filters['to_date']
+                num_articles = st.session_state.filters['num_articles']
+                
+                # Convert dates to string format
+                from_date_str = from_date.strftime('%Y-%m-%d') if from_date else None
+                to_date_str = to_date.strftime('%Y-%m-%d') if to_date else None
                 
                 # Fetch articles
                 sources_str = ",".join(sources) if sources else None
-                data = fetch_news(api_key, search_word, 'relevancy', None, None, 19, 1, language, sources_str)
+                data = fetch_news(api_key, search_word, 'relevancy', from_date_str, to_date_str, num_articles, 1, language, sources_str)
                 
             # Check if data is not None and contains 'articles'
             if data and 'articles' in data:
@@ -141,15 +157,15 @@ with tabs[1]:
     if selected_menu == "Custom Date Range":
         col1, col2 = st.columns(2)
         with col1:
-            from_date = st.date_input("From Date:", value=datetime.now() - timedelta(days=30))
+            st.session_state.filters['from_date'] = st.date_input("From Date:", value=st.session_state.filters['from_date'])
         with col2:
-            to_date = st.date_input("To Date:", value=datetime.now())
+            st.session_state.filters['to_date'] = st.date_input("To Date:", value=st.session_state.filters['to_date'])
     else:
-        from_date = None
-        to_date = None
+        st.session_state.filters['from_date'] = None
+        st.session_state.filters['to_date'] = None
 
     # Advanced filters for language and sources
-    language = st.selectbox("Select Language:", options=["", "en", "es", "fr", "de", "it", "zh", "ar"], index=0)
+    st.session_state.filters['language'] = st.selectbox("Select Language:", options=["", "en", "es", "fr", "de", "it", "zh", "ar"], index=0)
 
     # Fetch available sources from the API
     if api_key:
@@ -158,18 +174,10 @@ with tabs[1]:
     else:
         source_options = []
 
-    sources = st.multiselect("Select Sources:", options=source_options)
+    st.session_state.filters['sources'] = st.multiselect("Select Sources:", options=source_options)
 
     # Number of articles to fetch
-    num_articles = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=19)
-
-    # Save user preferences when the filter is set
-    user_preferences = {
-        'language': language,
-        'sources': sources,
-        'output_format': selected_output  # Store the output format as well
-    }
-    save_user_preferences(user_preferences)
+    st.session_state.filters['num_articles'] = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=st.session_state.filters['num_articles'])
 
 # About page
 if st.button("About"):
