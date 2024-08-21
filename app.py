@@ -85,29 +85,12 @@ with tabs[0]:
             with st.spinner("Fetching news articles..."):
                 # Load user preferences from the database
                 user_preferences = load_user_preferences()
-                if user_preferences:
-                    language = user_preferences.get('language', None)
-                    sources = user_preferences.get('sources', None)
-                    selected_menu = user_preferences.get('selected_menu', "Recent News")
-                else:
-                    selected_menu = "Recent News"
-                
-                if selected_menu == "Recent News":
-                    sort_by = 'publishedAt'
-                elif selected_menu == "Trending News":
-                    sort_by = 'popularity'
-                elif selected_menu == "Breaking News":
-                    sort_by = 'relevancy'
-                elif selected_menu == "Oldest News":
-                    sort_by = 'publishedAt'
-                    from_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
-                    to_date = datetime.now().strftime('%Y-%m-%d')
-                else:
-                    sort_by = 'relevancy'
+                language = user_preferences['language'] if user_preferences else None
+                sources = user_preferences['sources'] if user_preferences else []
                 
                 # Fetch articles
                 sources_str = ",".join(sources) if sources else None
-                data = fetch_news(api_key, search_word, sort_by, from_date, to_date, num_articles, 1, language, sources_str)
+                data = fetch_news(api_key, search_word, 'relevancy', None, None, 19, 1, language, sources_str)
                 
             # Check if data is not None and contains 'articles'
             if data and 'articles' in data:
@@ -184,7 +167,7 @@ with tabs[1]:
     user_preferences = {
         'language': language,
         'sources': sources,
-        'selected_menu': selected_menu
+        'output_format': selected_output  # Store the output format as well
     }
     save_user_preferences(user_preferences)
 
