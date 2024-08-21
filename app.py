@@ -1,4 +1,5 @@
 import streamlit as st
+from styles import get_styles
 import requests
 import json
 from datetime import datetime, timedelta
@@ -9,6 +10,7 @@ create_table()
 
 # Set the page title and layout
 st.set_page_config(page_title="Next News Search", layout="wide")
+st.markdown(get_styles(), unsafe_allow_html=True)
 
 # Add meta description
 st.markdown('<meta name="description" content="Next News Search is a user-friendly application that allows you to search for the latest news articles using the News API. Enter your keywords and API key to fetch relevant news articles effortlessly." />', unsafe_allow_html=True)
