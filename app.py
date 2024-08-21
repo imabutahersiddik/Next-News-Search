@@ -74,11 +74,11 @@ if "show_date" not in st.session_state:
 # Search Tab
 with tabs[0]:
     
-    # User input for search keywords
-    search_word = st.text_input("", placeholder="Search the news...", key="search_input")
+    # User input for search keywords with enter to search functionality
+    search_word = st.text_input("", placeholder="Search the news...", key="search_input", on_change=lambda: st.session_state.search())
     
     # Button to fetch news (icon on right)
-    if st.button("🔍", key="search_button"):
+    if st.button("🔍", key="search_button") or st.session_state.get("search"):
         if api_key and search_word:
             with st.spinner("Fetching news articles..."):
                 # Use filters from session state
