@@ -143,7 +143,7 @@ with st.container():
         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Magnifying_glass_icon.svg/1024px-Magnifying_glass_icon.svg.png" 
              class="search-icon" 
              alt="Search" 
-             onclick="document.querySelector('input[data-baseweb="input"]').dispatchEvent(new Event('change'));" 
+             onclick="document.getElementById('search_input').dispatchEvent(new Event('change'));" 
              style="cursor: pointer;" />
     """, unsafe_allow_html=True)
 
