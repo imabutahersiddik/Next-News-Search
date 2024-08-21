@@ -243,4 +243,4 @@ if st.session_state.modal_enabled:
         st.write("Use this application to find the latest news articles.")
         st.markdown("[Get your API Key here!](https://newsapi.org/register)")
         if st.button("Close"):
-            close_modal())          close_modal()
+            close_modal()
