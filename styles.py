@@ -6,6 +6,12 @@ def get_styles():
         background-color: #f0f4f8;
         color: #333;
         font-family: 'Arial', sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
     }
 
     /* Title styles */
@@ -16,13 +22,32 @@ def get_styles():
         margin-bottom: 20px;
     }
 
-    /* Input styles */
-    .stTextInput, .stTextArea, .stSelectbox, .stMultiselect, .stNumberInput {
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        padding: 10px;
-        margin-bottom: 20px;
+    /* Search form styles */
+    .search-container {
+        position: relative;
         width: 100%;
+        max-width: 600px;
+        margin-bottom: 20px;
+    }
+
+    /* Input styles */
+    .search-input {
+        width: 100%;
+        padding: 15px 45px 15px 15px; /* Right padding for icon */
+        border: 2px solid #4CAF50;
+        border-radius: 5px;
+        font-size: 1.2em;
+    }
+
+    /* Icon styles */
+    .search-icon {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        width: 24px; /* Adjust size as needed */
+        height: 24px; /* Adjust size as needed */
     }
 
     /* Expander styles */
