@@ -66,7 +66,8 @@ if "filters" not in st.session_state:
         "sources": [],
         "from_date": datetime.now() - timedelta(days=30),
         "to_date": datetime.now(),
-        "num_articles": 19
+        "num_articles": 19,
+        "output_format": "Title and Description"  # Default output format
     }
 
 # Search Tab
@@ -76,16 +77,6 @@ with tabs[0]:
     # User input for search keywords
     search_word = st.text_input("Enter keywords to search for news articles:")
     
-    # Output options for displaying content
-    output_options = [
-        "Title and Description",
-        "Title Only",
-        "Description Only",
-        "Content Only",
-        "Title, Description and Content"
-    ]
-    selected_output = st.selectbox("Select output format:", output_options)
-
     # Initialize data variable
     data = None
 
@@ -114,21 +105,21 @@ with tabs[0]:
                 results = ""
 
                 for article in articles:
-                    if selected_output == "Title and Description":
+                    if st.session_state.filters['output_format'] == "Title and Description":
                         st.subheader(article['title'])
                         st.write(article['description'])
                         results += f"**{article['title']}**\n{article['description']}\n\n"
-                    elif selected_output == "Title Only":
+                    elif st.session_state.filters['output_format'] == "Title Only":
                         st.subheader(article['title'])
                         results += f"**{article['title']}**\n\n"
-                    elif selected_output == "Description Only":
+                    elif st.session_state.filters['output_format'] == "Description Only":
                         st.write(article['description'])
                         results += f"{article['description']}\n\n"
-                    elif selected_output == "Content Only":
+                    elif st.session_state.filters['output_format'] == "Content Only":
                         st.subheader(article['title'])
                         st.write(article['content'])
                         results += f"**{article['title']}**\n{article['content']}\n\n"
-                    elif selected_output == "Title, Description and Content":
+                    elif st.session_state.filters['output_format'] == "Title, Description and Content":
                         st.subheader(article['title'])
                         st.write(article['description'])
                         st.write(article['content'])
@@ -178,6 +169,16 @@ with tabs[1]:
 
     # Number of articles to fetch
     st.session_state.filters['num_articles'] = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=st.session_state.filters['num_articles'])
+
+    # Output format selection
+    output_options = [
+        "Title and Description",
+        "Title Only",
+        "Description Only",
+        "Content Only",
+        "Title, Description and Content"
+    ]
+    st.session_state.filters['output_format'] = st.selectbox("Select Output Format:", output_options)
 
 # About page
 if st.button("About"):
