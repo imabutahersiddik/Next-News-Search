@@ -75,7 +75,6 @@ if "filters" not in st.session_state:
 
 # Search Tab
 with tabs[0]:
-    st.header("Search News Articles")
     
     # User input for search keywords
     search_word = st.text_input("", placeholder="Search the news...", key="search_input")
