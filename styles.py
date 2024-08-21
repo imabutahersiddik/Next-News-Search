@@ -20,6 +20,7 @@ def get_styles():
         color: #4CAF50;
         font-weight: bold;
         margin-bottom: 20px;
+        text-align: center;
     }
 
     /* Search form styles */
