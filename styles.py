@@ -16,12 +16,6 @@ def get_styles():
         margin-bottom: 20px;
     }
 
-    /* Header styles */
-    h1, h2, h3 {
-        color: #4CAF50;
-        font-weight: bold;
-    }
-
     /* Input styles */
     .stTextInput, .stTextArea, .stSelectbox, .stMultiselect, .stNumberInput {
         border: 1px solid #ccc;
