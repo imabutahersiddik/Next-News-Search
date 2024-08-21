@@ -39,6 +39,36 @@ def get_styles():
         font-size: 1.2em;
     }
 
+    .stSearchForm {{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 50px;
+        position: relative;
+    }}
+    
+    .stSearchForm input[type=text] {{
+        width: 500px;
+        height: 40px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 20px;
+        font-size: 16px;
+        padding-right: 40px;
+    }}
+    
+    .stSearchForm button {{
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        background-color: transparent;
+        border: none;
+        color: #666;
+        font-size: 20px;
+        cursor: pointer;
+    }}
+
     /* Icon styles */
     .search-icon {
         position: absolute;
