@@ -24,7 +24,6 @@ def get_styles():
 
     /* Button styles */
     .stButton {
-        background-color: #4CAF50;
         color: white;
         border: none;
         border-radius: 5px;
