@@ -99,12 +99,6 @@ output_options = [
 ]
 selected_output = st.selectbox("Select output format:", output_options)
 
-# Initialize session state variables
-if "results" not in st.session_state:
-    st.session_state.results = ""
-if "search_history" not in st.session_state:
-    st.session_state.search_history = []
-
 # Load user preferences from the database
 user_preferences = load_user_preferences()
 if user_preferences:
@@ -164,34 +158,14 @@ if st.button("Search"):
 
                 st.write("-" * 20)
 
-            # Store results in session state
-            st.session_state.results = results
-
             # Show results in an expander
             with st.expander("Save Results", expanded=False):
-                st.text_area("Copy Results", value=st.session_state.results, height=300)
-
-            # Add to search history
-            st.session_state.search_history.append((search_word, sort_by, from_date, to_date, language, sources_str))
-
-            if "show_date" in st.session_state and st.session_state.show_date:
-                for article in articles:
-                    st.write(f"Published: {article['publishedAt']}")
-                st.write("-" * 19)
+                st.text_area("Copy Results", value=results, height=300)
 
         else:
             st.warning("No articles found for your search query or an error occurred.")
     else:
         st.warning("Please enter both your API key and search keywords.")
-
-# Display search history
-if st.button("Show Search History"):
-    if st.session_state.search_history:
-        st.write("### Search History")
-        for i, (word, sort, from_d, to_d, lang, src) in enumerate(st.session_state.search_history):
-            st.write(f"{i + 1}. Keywords: **{word}**, Sort By: **{sort}**, From: **{from_d}**, To: **{to_d}**, Language: **{lang}**, Sources: **{src}**")
-    else:
-        st.write("No search history available.")
 
 # About page
 if st.button("About"):
