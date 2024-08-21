@@ -54,7 +54,7 @@ api_key = load_api_key()
 if api_key is None:
     api_key = st.text_input("Enter your News API key:")
     if api_key:
-        save_api_key(api_key)  # Save the API key to the database
+        save_api_key(api_key)
 
 # User input for search keywords
 search_word = st.text_input("Enter keywords to search for news articles:")
@@ -104,8 +104,6 @@ if "results" not in st.session_state:
     st.session_state.results = ""
 if "search_history" not in st.session_state:
     st.session_state.search_history = []
-if "current_page" not in st.session_state:
-    st.session_state.current_page = 1
 
 # Load user preferences from the database
 user_preferences = load_user_preferences()
@@ -115,7 +113,7 @@ if user_preferences:
     selected_output = user_preferences.get('output_format', selected_output)
 
 # Initialize data variable
-data = None  # Initialize data to None
+data = None
 
 # Button to fetch news
 if st.button("Search"):
@@ -134,37 +132,37 @@ if st.button("Search"):
             else:
                 sort_by = 'relevancy'
             
-            # Fetch articles for the current page
+            # Fetch articles
             sources_str = ",".join(sources) if sources else None
-            data = fetch_news(api_key, search_word, sort_by, from_date, to_date, num_articles, st.session_state.current_page, language, sources_str)
+            data = fetch_news(api_key, search_word, sort_by, from_date, to_date, num_articles, 1, language, sources_str)
             
         # Check if data is not None and contains 'articles'
         if data and 'articles' in data:
             articles = data['articles']
-            results = ""  # Initialize a string to hold all results
+            results = ""
 
             for article in articles:
                 if selected_output == "Title and Description":
-                    st.subheader(article['title'])  # Display the title as a subheader
-                    st.write(article['description'])  # Display the description
+                    st.subheader(article['title'])
+                    st.write(article['description'])
                     results += f"**{article['title']}**\n{article['description']}\n\n"
                 elif selected_output == "Title Only":
-                    st.subheader(article['title'])  # Display the title as a subheader
+                    st.subheader(article['title'])
                     results += f"**{article['title']}**\n\n"
                 elif selected_output == "Description Only":
-                    st.write(article['description'])  # Display the description
+                    st.write(article['description'])
                     results += f"{article['description']}\n\n"
                 elif selected_output == "Content Only":
-                    st.subheader(article['title'])  # Display the title as a subheader
-                    st.write(article['content'])  # Display the content only
+                    st.subheader(article['title'])
+                    st.write(article['content'])
                     results += f"**{article['title']}**\n{article['content']}\n\n"
                 elif selected_output == "Title, Description and Content":
-                    st.subheader(article['title'])  # Display the title as a subheader
-                    st.write(article['description'])  # Display the description
-                    st.write(article['content'])  # Display the full content
+                    st.subheader(article['title'])
+                    st.write(article['description'])
+                    st.write(article['content'])
                     results += f"**{article['title']}**\n{article['description']}\n{article['content']}\n\n"
 
-                st.write("-" * 20)  # Separator line between articles
+                st.write("-" * 20)
 
             # Store results in session state
             st.session_state.results = results
@@ -185,17 +183,6 @@ if st.button("Search"):
             st.warning("No articles found for your search query or an error occurred.")
     else:
         st.warning("Please enter both your API key and search keywords.")
-
-# Pagination controls
-if data and 'totalResults' in data:  # Ensure data is defined before checking  # Ensure data is defined before checking 'totalResults'
-    total_pages = (data['totalResults'] // num_articles) + (1 if data['totalResults'] % num_articles > 0 else 0)
-    if st.session_state.current_page < total_pages:
-        if st.button("Next Page"):
-            st.session_state.current_page += 1
-
-if st.session_state.current_page > 1:
-    if st.button("Previous Page"):
-        st.session_state.current_page -= 1
 
 # Display search history
 if st.button("Show Search History"):
