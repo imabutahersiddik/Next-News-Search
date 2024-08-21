@@ -22,20 +22,6 @@ def get_styles():
         font-weight: bold;
     }
 
-    /* Button styles */
-    .stButton {
-        color: white;
-        border: none;
-        border-radius: 5px;
-        padding: 10px 20px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-    }
-
-    .stButton:hover {
-        background-color: #45a049;
-    }
-
     /* Input styles */
     .stTextInput, .stTextArea, .stSelectbox, .stMultiselect, .stNumberInput {
         border: 1px solid #ccc;
