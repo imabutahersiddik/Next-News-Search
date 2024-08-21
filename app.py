@@ -199,10 +199,9 @@ show_date = st.checkbox("Show Published Date", value=st.session_state.show_date)
 st.session_state.show_date = show_date
 
 # Save user preferences when the search button is clicked
-if st.button("Search"):
-    user_preferences = {
-        'language': language,
-        'sources': sources,
-        'output_format': selected_output
-    }
-    save_user_preferences(user_preferences)
+user_preferences = {
+    'language': language,
+    'sources': sources,
+    'output_format': selected_output
+}
+save_user_preferences(user_preferences)
