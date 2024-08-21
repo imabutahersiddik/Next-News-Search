@@ -114,6 +114,9 @@ if user_preferences:
     sources = user_preferences.get('sources', sources)
     selected_output = user_preferences.get('output_format', selected_output)
 
+# Initialize data variable
+data = None  # Initialize data to None
+
 # Button to fetch news
 if st.button("Search"):
     if api_key and search_word:
@@ -135,7 +138,8 @@ if st.button("Search"):
             sources_str = ",".join(sources) if sources else None
             data = fetch_news(api_key, search_word, sort_by, from_date, to_date, num_articles, st.session_state.current_page, language, sources_str)
             
-        if data and 'articles' in data and len(data['articles']) > 0:
+        # Check if data is not None and contains 'articles'
+        if data and 'articles' in data:
             articles = data['articles']
             results = ""  # Initialize a string to hold all results
 
@@ -178,20 +182,20 @@ if st.button("Search"):
                 st.write("-" * 19)
 
         else:
-            st.warning("No articles found for your search query.")
+            st.warning("No articles found for your search query or an error occurred.")
     else:
         st.warning("Please enter both your API key and search keywords.")
 
 # Pagination controls
-if st.session_state.current_page > 1:
-    if st.button("Previous Page"):
-        st.session_state.current_page -= 1
-
-if data and 'totalResults' in data:
+if data and 'totalResults' in data:  # Ensure data is defined before checking 'totalResults'
     total_pages = (data['totalResults'] // num_articles) + (1 if data['totalResults'] % num_articles > 0 else 0)
     if st.session_state.current_page < total_pages:
         if st.button("Next Page"):
             st.session_state.current_page += 1
+
+if st.session_state.current_page > 1:
+    if st.button("Previous Page"):
+        st.session_state.current_page -= 1
 
 # Display search history
 if st.button("Show Search History"):
