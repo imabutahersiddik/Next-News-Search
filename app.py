@@ -3,12 +3,16 @@ import requests
 import json
 from datetime import datetime, timedelta
 from database import create_table, save_api_key, load_api_key, save_user_preferences, load_user_preferences
+from styles import apply_styles  # Import the styles module
 
 # Initialize database and create table
 create_table()
 
 # Set the page title and layout
 st.set_page_config(page_title="Next News Search", layout="wide")
+
+# Apply styles
+apply_styles()
 
 # Add meta description
 st.markdown('<meta name="description" content="Next News Search is a user-friendly application that allows you to search for the latest news articles using the News API. Enter your keywords and API key to fetch relevant news articles effortlessly." />', unsafe_allow_html=True)
@@ -75,13 +79,10 @@ with tabs[0]:
     st.header("Search News Articles")
     
     # User input for search keywords
-    search_word = st.text_input("Enter keywords to search for news articles:")
+    search_word = st.text_input("", placeholder="Search the news...", key="search_input")
     
-    # Initialize data variable
-    data = None
-
-    # Button to fetch news
-    if st.button("Search"):
+    # Button to fetch news (icon on right)
+    if st.button("🔍", key="search_button"):
         if api_key and search_word:
             with st.spinner("Fetching news articles..."):
                 # Use filters from session state
