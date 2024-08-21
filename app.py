@@ -73,6 +73,10 @@ if "filters" not in st.session_state:
         "output_format": "Title and Description"  # Default output format
     }
 
+# Initialize session state for "show_date" if not already done
+if "show_date" not in st.session_state:
+    st.session_state.show_date = False
+
 # Search Tab
 with tabs[0]:
     
@@ -123,6 +127,9 @@ with tabs[0]:
                         st.write(article['description'])
                         st.write(article['content'])
                         results += f"**{article['title']}**\n{article['description']}\n{article['content']}\n\n"
+
+                    if st.session_state.show_date:
+                        st.write(f"Published: {article['publishedAt']}")
 
                     st.write("-" * 20)
 
