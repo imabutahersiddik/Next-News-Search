@@ -10,6 +10,9 @@ create_table()
 # Set the page title and layout
 st.set_page_config(page_title="Next News Search", layout="wide")
 
+# Add meta description
+st.markdown('<meta name="description" content="Next News Search is a user-friendly application that allows you to search for the latest news articles using the News API. Enter your keywords and API key to fetch relevant news articles effortlessly." />', unsafe_allow_html=True)
+
 # Function to fetch news articles
 def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_date=None, page_size=19, page=1, language=None, sources=None):
     url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}&sortBy={sort_by}&pageSize={page_size}&page={page}"
@@ -41,81 +44,6 @@ def fetch_sources(api_key):
         st.error("Failed to fetch sources. Please check your API key and try again.")
         return []
 
-# Function to get styles
-def get_styles():
-    return """
-    <style>
-    /* General body styles */
-    body {
-        background-color: #f0f4f8;
-        color: #333;
-        font-family: 'Arial', sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        margin: 0;
-    }
-
-    /* Title styles */
-    .stTitle {
-        font-size: 2.5em;
-        color: #4CAF50;
-        font-weight: bold;
-        margin-bottom: 20px;
-    }
-
-    /* Search form styles */
-    .search-container {
-        position: relative;
-        width: 100%;
-        max-width: 600px;
-        margin-bottom: 20px;
-    }
-
-    /* Input styles */
-    .search-input {
-        width: 100%;
-        padding: 15px 45px 15px 15px; /* Right padding for icon */
-        border: 2px solid #4CAF50;
-        border-radius: 5px;
-        font-size: 1.2em;
-    }
-
-    /* Icon styles */
-    .search-icon {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        cursor: pointer;
-        width: 24px; /* Adjust size as needed */
-        height: 24px; /* Adjust size as needed */
-    }
-
-    /* Expander styles */
-    .stExpander {
-        background-color: #e8f5e9;
-        border-radius: 5px;
-        padding: 10px;
-    }
-
-    /* Checkbox styles */
-    .stCheckbox {
-        margin-bottom: 20px;
-    }
-
-    /* Footer styles */
-    .stFooter {
-        text-align: center;
-        padding: 20px;
-        font-size: 0.8em;
-        color: #777;
-    }
-    </style>
-    """
-
 # Streamlit app layout
 st.title("Next News Search")
 
@@ -128,44 +56,129 @@ if api_key is None:
     if api_key:
         save_api_key(api_key)
 
-# Add custom CSS for styling
-st.markdown(get_styles(), unsafe_allow_html=True)
+# Create tabs for Search and Filters
+tabs = st.tabs(["Search", "Filters"])
 
-# Create a search container
-with st.container():
-    st.markdown('<div class="search-container">', unsafe_allow_html=True)
+# Initialize session state for filters if not already done
+if "filters" not in st.session_state:
+    st.session_state.filters = {
+        "language": "",
+        "sources": [],
+        "from_date": datetime.now() - timedelta(days=30),
+        "to_date": datetime.now(),
+        "num_articles": 19,
+        "output_format": "Title and Description"  # Default output format
+    }
 
+# Search Tab
+with tabs[0]:
+    st.header("Search News Articles")
+    
     # User input for search keywords
-    search_word = st.text_input("Enter keywords to search for news articles:", placeholder="Search for news...", key="search_input")
+    search_word = st.text_input("Enter keywords to search for news articles:")
+    
+    # Initialize data variable
+    data = None
 
-    # Add the search icon
-    st.markdown("""
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Magnifying_glass_icon.svg/1024px-Magnifying_glass_icon.svg.png" 
-             class="search-icon" 
-             alt="Search" 
-             onclick="document.querySelector('input[data-baseweb="input"]').dispatchEvent(new Event('change'));" 
-             style="cursor: pointer;" />
-    """, unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Handle the search action
-    if st.session_state.search_input:
-        if api_key:
+    # Button to fetch news
+    if st.button("Search"):
+        if api_key and search_word:
             with st.spinner("Fetching news articles..."):
-                # Fetch articles based on the search_word and api_key
-                data = fetch_news(api_key, st.session_state.search_input)  # Assuming fetch_news is defined
-                # Handle the response...
-                if data and 'articles' in data:
-                    articles = data['articles']
-                    for article in articles:
+                # Use filters from session state
+                language = st.session_state.filters['language']
+                sources = st.session_state.filters['sources']
+                from_date = st.session_state.filters['from_date']
+                to_date = st.session_state.filters['to_date']
+                num_articles = st.session_state.filters['num_articles']
+                
+                # Convert dates to string format
+                from_date_str = from_date.strftime('%Y-%m-%d') if from_date else None
+                to_date_str = to_date.strftime('%Y-%m-%d') if to_date else None
+                
+                # Fetch articles
+                sources_str = ",".join(sources) if sources else None
+                data = fetch_news(api_key, search_word, 'relevancy', from_date_str, to_date_str, num_articles, 1, language, sources_str)
+                
+            # Check if data is not None and contains 'articles'
+            if data and 'articles' in data:
+                articles = data['articles']
+                results = ""
+
+                for article in articles:
+                    if st.session_state.filters['output_format'] == "Title and Description":
                         st.subheader(article['title'])
                         st.write(article['description'])
-                        st.write("-" * 20)
-                else:
-                    st.warning("No articles found for your search query or an error occurred.")
+                        results += f"**{article['title']}**\n{article['description']}\n\n"
+                    elif st.session_state.filters['output_format'] == "Title Only":
+                        st.subheader(article['title'])
+                        results += f"**{article['title']}**\n\n"
+                    elif st.session_state.filters['output_format'] == "Description Only":
+                        st.write(article['description'])
+                        results += f"{article['description']}\n\n"
+                    elif st.session_state.filters['output_format'] == "Content Only":
+                        st.subheader(article['title'])
+                        st.write(article['content'])
+                        results += f"**{article['title']}**\n{article['content']}\n\n"
+                    elif st.session_state.filters['output_format'] == "Title, Description and Content":
+                        st.subheader(article['title'])
+                        st.write(article['description'])
+                        st.write(article['content'])
+                        results += f"**{article['title']}**\n{article['description']}\n{article['content']}\n\n"
+
+                    st.write("-" * 20)
+
+                # Show results in an expander
+                with st.expander("Save Results", expanded=False):
+                    st.text_area("Copy Results", value=results, height=300)
+
+            else:
+                st.warning("No articles found for your search query or an error occurred.")
         else:
-            st.warning("Please enter your API key.")
+            st.warning("Please enter both your API key and search keywords.")
+
+# Filters Tab
+with tabs[1]:
+    st.header("Filter News")
+    
+    # Menu options for filtering news
+    menu_options = ["Recent News", "Trending News", "Breaking News", "Oldest News", "Custom Date Range"]
+    selected_menu = st.selectbox("Filter News By:", menu_options)
+
+    # Date range selection
+    if selected_menu == "Custom Date Range":
+        col1, col2 = st.columns(2)
+        with col1:
+            st.session_state.filters['from_date'] = st.date_input("From Date:", value=st.session_state.filters['from_date'])
+        with col2:
+            st.session_state.filters['to_date'] = st.date_input("To Date:", value=st.session_state.filters['to_date'])
+    else:
+        st.session_state.filters['from_date'] = None
+        st.session_state.filters['to_date'] = None
+
+    # Advanced filters for language and sources
+    st.session_state.filters['language'] = st.selectbox("Select Language:", options=["", "en", "es", "fr", "de", "it", "zh", "ar"], index=0)
+
+    # Fetch available sources from the API
+    if api_key:
+        sources_list = fetch_sources(api_key)
+        source_options = [source['id'] for source in sources_list]
+    else:
+        source_options = []
+
+    st.session_state.filters['sources'] = st.multiselect("Select Sources:", options=source_options)
+
+    # Number of articles to fetch
+    st.session_state.filters['num_articles'] = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=st.session_state.filters['num_articles'])
+
+    # Output format selection
+    output_options = [
+        "Title and Description",
+        "Title Only",
+        "Description Only",
+        "Content Only",
+        "Title, Description and Content"
+    ]
+    st.session_state.filters['output_format'] = st.selectbox("Select Output Format:", output_options)
 
 # About page
 if st.button("About"):
