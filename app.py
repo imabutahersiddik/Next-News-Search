@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import json
 from datetime import datetime, timedelta
-from database import create_table, save_api_key, load_api_key
+from database import create_table, save_api_key, load_api_key, save_user_preferences, load_user_preferences
 
 # Initialize database and create table
 create_table()
@@ -12,12 +12,19 @@ st.set_page_config(page_title="Next News Search", layout="wide")
 
 # Add meta description
 st.markdown('<meta name="description" content="Next News Search is a user-friendly application that allows you to search for the latest news articles using the News API. Enter your keywords and API key to fetch relevant news articles effortlessly." />', unsafe_allow_html=True)
+
 # Function to fetch news articles
-def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_date=None, page_size=19):
-    url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}&sortBy={sort_by}&pageSize={page_size}"
+def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_date=None, page_size=19, page=1, language=None, sources=None):
+    url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}&sortBy={sort_by}&pageSize={page_size}&page={page}"
     
     if from_date and to_date:
         url += f"&from={from_date}&to={to_date}"
+    
+    if language:
+        url += f"&language={language}"
+    
+    if sources:
+        url += f"&sources={sources}"
     
     response = requests.get(url)
     
@@ -26,6 +33,16 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
     else:
         st.error("Failed to fetch news articles. Please check your API key and try again.")
         return None
+
+# Function to fetch available sources
+def fetch_sources(api_key):
+    url = f"https://newsapi.org/v2/sources?apiKey={api_key}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return json.loads(response.text)['sources']
+    else:
+        st.error("Failed to fetch sources. Please check your API key and try again.")
+        return []
 
 # Streamlit app layout
 st.title("Next News Search")
@@ -42,7 +59,7 @@ if api_key is None:
 # User input for search keywords
 search_word = st.text_input("Enter keywords to search for news articles:")
 
-# Menu options
+# Menu options for filtering news
 menu_options = ["Recent News", "Trending News", "Breaking News", "Oldest News", "Custom Date Range"]
 selected_menu = st.selectbox("Filter News By:", menu_options)
 
@@ -57,6 +74,18 @@ else:
     from_date = None
     to_date = None
 
+# Advanced filters for language and sources
+language = st.selectbox("Select Language:", options=["", "en", "es", "fr", "de", "it", "zh", "ar"], index=0)
+
+# Fetch available sources from the API
+if api_key:
+    sources_list = fetch_sources(api_key)
+    source_options = [source['id'] for source in sources_list]
+else:
+    source_options = []
+
+sources = st.multiselect("Select Sources:", options=source_options)
+
 # Number of articles to fetch
 num_articles = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=19)
 
@@ -70,9 +99,20 @@ output_options = [
 ]
 selected_output = st.selectbox("Select output format:", output_options)
 
-# Initialize a session state variable to hold results
+# Initialize session state variables
 if "results" not in st.session_state:
     st.session_state.results = ""
+if "search_history" not in st.session_state:
+    st.session_state.search_history = []
+if "current_page" not in st.session_state:
+    st.session_state.current_page = 1
+
+# Load user preferences from the database
+user_preferences = load_user_preferences()
+if user_preferences:
+    language = user_preferences.get('language', language)
+    sources = user_preferences.get('sources', sources)
+    selected_output = user_preferences.get('output_format', selected_output)
 
 # Button to fetch news
 if st.button("Search"):
@@ -91,7 +131,9 @@ if st.button("Search"):
             else:
                 sort_by = 'relevancy'
             
-            data = fetch_news(api_key, search_word, sort_by, from_date, to_date, num_articles)
+            # Fetch articles for the current page
+            sources_str = ",".join(sources) if sources else None
+            data = fetch_news(api_key, search_word, sort_by, from_date, to_date, num_articles, st.session_state.current_page, language, sources_str)
             
         if data and 'articles' in data and len(data['articles']) > 0:
             articles = data['articles']
@@ -127,6 +169,9 @@ if st.button("Search"):
             with st.expander("Save Results", expanded=False):
                 st.text_area("Copy Results", value=st.session_state.results, height=300)
 
+            # Add to search history
+            st.session_state.search_history.append((search_word, sort_by, from_date, to_date, language, sources_str))
+
             if "show_date" in st.session_state and st.session_state.show_date:
                 for article in articles:
                     st.write(f"Published: {article['publishedAt']}")
@@ -136,6 +181,26 @@ if st.button("Search"):
             st.warning("No articles found for your search query.")
     else:
         st.warning("Please enter both your API key and search keywords.")
+
+# Pagination controls
+if st.session_state.current_page > 1:
+    if st.button("Previous Page"):
+        st.session_state.current_page -= 1
+
+if data and 'totalResults' in data:
+    total_pages = (data['totalResults'] // num_articles) + (1 if data['totalResults'] % num_articles > 0 else 0)
+    if st.session_state.current_page < total_pages:
+        if st.button("Next Page"):
+            st.session_state.current_page += 1
+
+# Display search history
+if st.button("Show Search History"):
+    if st.session_state.search_history:
+        st.write("### Search History")
+        for i, (word, sort, from_d, to_d, lang, src) in enumerate(st.session_state.search_history):
+            st.write(f"{i + 1}. Keywords: **{word}**, Sort By: **{sort}**, From: **{from_d}**, To: **{to_d}**, Language: **{lang}**, Sources: **{src}**")
+    else:
+        st.write("No search history available.")
 
 # About page
 if st.button("About"):
@@ -167,3 +232,12 @@ if "show_date" not in st.session_state:
 
 show_date = st.checkbox("Show Published Date", value=st.session_state.show_date)
 st.session_state.show_date = show_date
+
+# Save user preferences when the search button is clicked
+if st.button("Search"):
+    user_preferences = {
+        'language': language,
+        'sources': sources,
+        'output_format': selected_output
+    }
+    save_user_preferences(user_preferences)
