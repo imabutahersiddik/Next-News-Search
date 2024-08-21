@@ -71,6 +71,10 @@ if "filters" not in st.session_state:
 if "show_date" not in st.session_state:
     st.session_state.show_date = False
 
+# Initialize session state for "search" if not already done
+if "search" not in st.session_state:
+    st.session_state.search = False
+
 # Search Tab
 with tabs[0]:
     
@@ -78,7 +82,9 @@ with tabs[0]:
     search_word = st.text_input("", placeholder="Search the news...", key="search_input", on_change=lambda: st.session_state.search())
     
     # Button to fetch news (icon on right)
-    if st.button("🔍", key="search_button") or st.session_state.get("search"):
+    if st.button("🔍", key="search_button") or st.session_state.search:
+        st.session_state.search = False  # Reset the search session state
+        
         if api_key and search_word:
             with st.spinner("Fetching news articles..."):
                 # Use filters from session state
