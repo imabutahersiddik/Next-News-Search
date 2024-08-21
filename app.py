@@ -187,7 +187,7 @@ if st.button("Search"):
         st.warning("Please enter both your API key and search keywords.")
 
 # Pagination controls
-if data and 'totalResults' in data:  # Ensure data is defined before checking 'totalResults'
+if data and 'totalResults' in data:  # Ensure data is defined before checking  # Ensure data is defined before checking 'totalResults'
     total_pages = (data['totalResults'] // num_articles) + (1 if data['totalResults'] % num_articles > 0 else 0)
     if st.session_state.current_page < total_pages:
         if st.button("Next Page"):
