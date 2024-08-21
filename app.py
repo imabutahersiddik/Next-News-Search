@@ -136,7 +136,7 @@ with st.container():
     st.markdown('<div class="search-container">', unsafe_allow_html=True)
 
     # User input for search keywords
-    search_word = st.text_input("Enter keywords to search for news articles:", placeholder="Search for news...", key="search_input", css_class="search-input")
+    search_word = st.text_input("Enter keywords to search for news articles:", placeholder="Search for news...", key="search_input")
 
     # Add the search icon
     st.markdown("""
