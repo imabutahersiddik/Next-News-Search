@@ -53,14 +53,8 @@ st.markdown("<h1 style='text-align: center;'>Next News Search</h1>", unsafe_allo
 # Load the API key from the database
 api_key = load_api_key()
 
-# User input for API key with session state support
-if api_key is None:
-    api_key = st.text_input("Enter your News API key:")
-    if api_key:
-        save_api_key(api_key)
-
-# Create tabs for Search, Filters, and About
-tabs = st.tabs(["Search", "Filters", "About"])
+# Create tabs for Search, Filters, About, and Settings
+tabs = st.tabs(["Search", "Filters", "About", "Settings"])
 
 # Initialize session state for filters if not already done
 if "filters" not in st.session_state:
@@ -201,6 +195,39 @@ with tabs[2]:
     
     Explore the latest news articles effortlessly and customize your search with various filters!
     """)
+
+# Settings Tab
+with tabs[3]:
+    st.header("Settings")
+    
+    if api_key:
+        st.write("Current API Key: **" + api_key + "**")
+        
+        # Option to update or remove the API key
+        new_api_key = st.text_input("Update API Key:", placeholder="Enter new API key here")
+        
+        if st.button("Update API Key"):
+            if new_api_key:
+                save_api_key(new_api_key)
+                st.success("API Key updated successfully!")
+                api_key = new_api_key  # Update the local variable
+            else:
+                st.warning("Please enter a valid API key.")
+        
+        if st.button("Remove API Key"):
+            save_api_key(None)  # Remove the API key
+            api_key = None  # Clear the local variable
+            st.success("API Key removed successfully!")
+    else:
+        st.write("No API Key found.")
+        new_api_key = st.text_input("Enter your News API key:")
+        if st.button("Save API Key"):
+            if new_api_key:
+                save_api_key(new_api_key)
+                st.success("API Key saved successfully!")
+                api_key = new_api_key  # Update the local variable
+            else:
+                st.warning("Please enter a valid API key.")
 
 # Modal feature
 if "modal_enabled" not in st.session_state:
