@@ -56,116 +56,127 @@ if api_key is None:
     if api_key:
         save_api_key(api_key)
 
-# User input for search keywords
-search_word = st.text_input("Enter keywords to search for news articles:")
+# Create tabs for Filters and Search
+tabs = st.tabs(["Filters", "Search"])
 
-# Menu options for filtering news
-menu_options = ["Recent News", "Trending News", "Breaking News", "Oldest News", "Custom Date Range"]
-selected_menu = st.selectbox("Filter News By:", menu_options)
+# Filters Tab
+with tabs[0]:
+    st.header("Filter News")
+    
+    # Menu options for filtering news
+    menu_options = ["Recent News", "Trending News", "Breaking News", "Oldest News", "Custom Date Range"]
+    selected_menu = st.selectbox("Filter News By:", menu_options)
 
-# Date range selection
-if selected_menu == "Custom Date Range":
-    col1, col2 = st.columns(2)
-    with col1:
-        from_date = st.date_input("From Date:", value=datetime.now() - timedelta(days=30))
-    with col2:
-        to_date = st.date_input("To Date:", value=datetime.now())
-else:
-    from_date = None
-    to_date = None
-
-# Advanced filters for language and sources
-language = st.selectbox("Select Language:", options=["", "en", "es", "fr", "de", "it", "zh", "ar"], index=0)
-
-# Fetch available sources from the API
-if api_key:
-    sources_list = fetch_sources(api_key)
-    source_options = [source['id'] for source in sources_list]
-else:
-    source_options = []
-
-sources = st.multiselect("Select Sources:", options=source_options)
-
-# Number of articles to fetch
-num_articles = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=19)
-
-# Output options for displaying content
-output_options = [
-    "Title and Description",
-    "Title Only",
-    "Description Only",
-    "Content Only",
-    "Title, Description and Content"
-]
-selected_output = st.selectbox("Select output format:", output_options)
-
-# Load user preferences from the database
-user_preferences = load_user_preferences()
-if user_preferences:
-    language = user_preferences.get('language', language)
-    sources = user_preferences.get('sources', sources)
-    selected_output = user_preferences.get('output_format', selected_output)
-
-# Initialize data variable
-data = None
-
-# Button to fetch news
-if st.button("Search"):
-    if api_key and search_word:
-        with st.spinner("Fetching news articles..."):
-            if selected_menu == "Recent News":
-                sort_by = 'publishedAt'
-            elif selected_menu == "Trending News":
-                sort_by = 'popularity'
-            elif selected_menu == "Breaking News":
-                sort_by = 'relevancy'
-            elif selected_menu == "Oldest News":
-                sort_by = 'publishedAt'
-                from_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
-                to_date = datetime.now().strftime('%Y-%m-%d')
-            else:
-                sort_by = 'relevancy'
-            
-            # Fetch articles
-            sources_str = ",".join(sources) if sources else None
-            data = fetch_news(api_key, search_word, sort_by, from_date, to_date, num_articles, 1, language, sources_str)
-            
-        # Check if data is not None and contains 'articles'
-        if data and 'articles' in data:
-            articles = data['articles']
-            results = ""
-
-            for article in articles:
-                if selected_output == "Title and Description":
-                    st.subheader(article['title'])
-                    st.write(article['description'])
-                    results += f"**{article['title']}**\n{article['description']}\n\n"
-                elif selected_output == "Title Only":
-                    st.subheader(article['title'])
-                    results += f"**{article['title']}**\n\n"
-                elif selected_output == "Description Only":
-                    st.write(article['description'])
-                    results += f"{article['description']}\n\n"
-                elif selected_output == "Content Only":
-                    st.subheader(article['title'])
-                    st.write(article['content'])
-                    results += f"**{article['title']}**\n{article['content']}\n\n"
-                elif selected_output == "Title, Description and Content":
-                    st.subheader(article['title'])
-                    st.write(article['description'])
-                    st.write(article['content'])
-                    results += f"**{article['title']}**\n{article['description']}\n{article['content']}\n\n"
-
-                st.write("-" * 20)
-
-            # Show results in an expander
-            with st.expander("Save Results", expanded=False):
-                st.text_area("Copy Results", value=results, height=300)
-
-        else:
-            st.warning("No articles found for your search query or an error occurred.")
+    # Date range selection
+    if selected_menu == "Custom Date Range":
+        col1, col2 = st.columns(2)
+        with col1:
+            from_date = st.date_input("From Date:", value=datetime.now() - timedelta(days=30))
+        with col2:
+            to_date = st.date_input("To Date:", value=datetime.now())
     else:
-        st.warning("Please enter both your API key and search keywords.")
+        from_date = None
+        to_date = None
+
+    # Advanced filters for language and sources
+    language = st.selectbox("Select Language:", options=["", "en", "es", "fr", "de", "it", "zh", "ar"], index=0)
+
+    # Fetch available sources from the API
+    if api_key:
+        sources_list = fetch_sources(api_key)
+        source_options = [source['id'] for source in sources_list]
+    else:
+        source_options = []
+
+    sources = st.multiselect("Select Sources:", options=source_options)
+
+    # Number of articles to fetch
+    num_articles = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=19)
+
+    # Save user preferences when the filter is set
+    user_preferences = {
+        'language': language,
+        'sources': sources,
+    }
+    save_user_preferences(user_preferences)
+
+# Search Tab
+with tabs[1]:
+    st.header("Search News Articles")
+    
+    # User input for search keywords
+    search_word = st.text_input("Enter keywords to search for news articles:")
+    
+    # Output options for displaying content
+    output_options = [
+        "Title and Description",
+        "Title Only",
+        "Description Only",
+        "Content Only",
+        "Title, Description and Content"
+    ]
+    selected_output = st.selectbox("Select output format:", output_options)
+
+    # Initialize data variable
+    data = None
+
+    # Button to fetch news
+    if st.button("Search"):
+        if api_key and search_word:
+            with st.spinner("Fetching news articles..."):
+                if selected_menu == "Recent News":
+                    sort_by = 'publishedAt'
+                elif selected_menu == "Trending News":
+                    sort_by = 'popularity'
+                elif selected_menu == "Breaking News":
+                    sort_by = 'relevancy'
+                elif selected_menu == "Oldest News":
+                    sort_by = 'publishedAt'
+                    from_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+                    to_date = datetime.now().strftime('%Y-%m-%d')
+                else:
+                    sort_by = 'relevancy'
+                
+                # Fetch articles
+                sources_str = ",".join(sources) if sources else None
+                data = fetch_news(api_key, search_word, sort_by, from_date, to_date, num_articles, 1, language, sources_str)
+                
+            # Check if data is not None and contains 'articles'
+            if data and 'articles' in data:
+                articles = data['articles']
+                results = ""
+
+                for article in articles:
+                    if selected_output == "Title and Description":
+                        st.subheader(article['title'])
+                        st.write(article['description'])
+                        results += f"**{article['title']}**\n{article['description']}\n\n"
+                    elif selected_output == "Title Only":
+                        st.subheader(article['title'])
+                        results += f"**{article['title']}**\n\n"
+                    elif selected_output == "Description Only":
+                        st.write(article['description'])
+                        results += f"{article['description']}\n\n"
+                    elif selected_output == "Content Only":
+                        st.subheader(article['title'])
+                        st.write(article['content'])
+                        results += f"**{article['title']}**\n{article['content']}\n\n"
+                    elif selected_output == "Title, Description and Content":
+                        st.subheader(article['title'])
+                        st.write(article['description'])
+                        st.write(article['content'])
+                        results += f"**{article['title']}**\n{article['description']}\n{article['content']}\n\n"
+
+                    st.write("-" * 20)
+
+                # Show results in an expander
+                with st.expander("Save Results", expanded=False):
+                    st.text_area("Copy Results", value=results, height=300)
+
+            else:
+                st.warning("No articles found for your search query or an error occurred.")
+        else:
+            st.warning("Please enter both your API key and search keywords.")
 
 # About page
 if st.button("About"):
@@ -197,11 +208,3 @@ if "show_date" not in st.session_state:
 
 show_date = st.checkbox("Show Published Date", value=st.session_state.show_date)
 st.session_state.show_date = show_date
-
-# Save user preferences when the search button is clicked
-user_preferences = {
-    'language': language,
-    'sources': sources,
-    'output_format': selected_output
-}
-save_user_preferences(user_preferences)
