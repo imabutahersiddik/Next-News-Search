@@ -48,7 +48,7 @@ def fetch_sources(api_key):
         return []
 
 # Streamlit app layout
-st.title("Next News Search")
+st.markdown("<h1 style='text-align: center;'>Next News Search</h1>", unsafe_allow_html=True)
 
 # Load the API key from the database
 api_key = load_api_key()
@@ -59,8 +59,8 @@ if api_key is None:
     if api_key:
         save_api_key(api_key)
 
-# Create tabs for Search and Filters
-tabs = st.tabs(["Search", "Filters"])
+# Create tabs for Search, Filters, and About
+tabs = st.tabs(["Search", "Filters", "About"])
 
 # Initialize session state for filters if not already done
 if "filters" not in st.session_state:
@@ -179,12 +179,20 @@ with tabs[1]:
     ]
     st.session_state.filters['output_format'] = st.selectbox("Select Output Format:", output_options)
 
-# About page
-if st.button("About"):
+    # Move Show Published Date checkbox to the bottom of the Filters tab
+    show_date = st.checkbox("Show Published Date", value=st.session_state.show_date)
+    st.session_state.show_date = show_date
+
+# About Tab
+with tabs[2]:
     st.write("""
+    **About Next News Search**
+    
     This application allows you to search for news articles using the News API. 
     You can enter your API key to fetch articles based on your search keywords. 
     Your API key will be saved in the current session.
+    
+    Explore the latest news articles effortlessly and customize your search with various filters!
     """)
 
 # Modal feature
@@ -202,10 +210,3 @@ if st.session_state.modal_enabled:
         st.markdown("[Get your API Key here!](https://newsapi.org/register)")
         if st.button("Close"):
             close_modal()
-
-# Toggle to show/hide published date
-if "show_date" not in st.session_state:
-    st.session_state.show_date = False
-
-show_date = st.checkbox("Show Published Date", value=st.session_state.show_date)
-st.session_state.show_date = show_date
