@@ -1,5 +1,5 @@
 import streamlit as st
-from streamlit_cookies_manager import Cookies
+from streamlit_profiler import Profiler
 from styles import get_styles
 import requests
 import json
@@ -34,8 +34,8 @@ LANGUAGES = {
     "ar": "Arabic"
 }
 
-# Initialize cookies manager
-cookies = Cookies()
+# Initialize profiler
+profiler = Profiler()
 
 # Function to fetch news articles
 def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_date=None, page_size=19, page=1, language=None, country=None, category=None, author=None, sources=None):
@@ -74,11 +74,10 @@ def user_authentication():
     if 'is_logged_in' not in st.session_state:
         st.session_state['is_logged_in'] = False  # Initialize login state
 
-    # Check for cookies to maintain login state
-    username = cookies.get('username')
-    if username:
-        st.session_state['username'] = username
+    # Check for login state using profiler
+    if profiler.get('is_logged_in'):
         st.session_state['is_logged_in'] = True
+        st.session_state['username'] = profiler.get('username')
 
     if not st.session_state['is_logged_in']:
         menu = ["Login", "Register"]
@@ -92,7 +91,8 @@ def user_authentication():
                     st.success("Logged in successfully!")
                     st.session_state['username'] = username  # Store username in session state
                     st.session_state['is_logged_in'] = True  # Set logged-in state
-                    cookies.set('username', username, max_age=30*24*60*60)  # Store username in cookies for 30 days
+                    profiler.set('is_logged_in', True)  # Store login state using profiler
+                    profiler.set('username', username)  # Store username using profiler
                 else:
                     st.error("Invalid username or password.")
 
@@ -109,7 +109,8 @@ def user_authentication():
         if st.sidebar.button("Logout"):
             st.session_state['is_logged_in'] = False
             st.session_state.pop('username', None)  # Clear username on logout
-            cookies.delete('username')  # Remove username from cookies
+            profiler.set('is_logged_in', False)  # Clear login state using profiler
+            profiler.set('username', None)  # Clear username using profiler
 
 # Call the user authentication function
 user_authentication()
