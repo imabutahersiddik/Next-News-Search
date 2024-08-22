@@ -1,6 +1,8 @@
 import streamlit as st
-import sqlite3
+import requests
+import json
 from datetime import datetime, timedelta
+import sqlite3
 import secrets
 from database import create_table, save_api_key, load_api_key
 from news_sources import NEWS_SOURCES
@@ -95,7 +97,13 @@ def user_authentication():
                     if st.sidebar.button("Logout"):
                         st.session_state['is_logged_in'] = False
                         st.session_state['username'] = ''
+                        user_database.remove_session_id(st.session_state['session_id'])  # Clear session from DB
                         st.sidebar.write("Logged out successfully.")
+            else:
+                # Last activity not found
+                st.session_state['is_logged_in'] = False
+                st.session_state['username'] = ''
+                st.sidebar.write("Session expired. Please log in again.")
         else:
             # Session ID mismatch or user not found
             st.session_state['is_logged_in'] = False
@@ -218,7 +226,26 @@ else:
                                 st.subheader(article['title'])
                                 st.write(article['description'])
                                 results += f"**{article['title']}**\n{article['description']}\n\n"
-                            # ... (other output formats)
+                            elif st.session_state.filters['output_format'] == "Title Only":
+                                st.subheader(article['title'])
+                                results += f"**{article['title']}**\n\n"
+                            elif st.session_state.filters['output_format'] == "Description Only":
+                                st.write(article['description'])
+                                results += f"{article['description']}\n\n"
+                            elif st.session_state.filters['output_format'] == "Content Only":
+                                st.subheader(article['title'])
+                                st.write(article['content'])
+                                results += f"**{article['title']}**\n{article['content']}\n\n"
+                            elif st.session_state.filters['output_format'] == "Title, Description and Content":
+                                st.subheader(article['title'])
+                                st.write(article['description'])
+                                st.write(article['content'])
+                                results += f"**{article['title']}**\n{article['description']}\n{article['content']}\n\n"
+
+                            if st.session_state.show_date:
+                                st.write(f"Published: {article['publishedAt']}")
+
+                            st.write("-" * 20)
 
                         # Show results in an expander
                         with st.expander("Save Results", expanded=False):
@@ -241,7 +268,48 @@ else:
             key="language_select"
         )
 
-        # ... (other filters)
+        st.session_state.filters['country'] = st.selectbox(
+            "Select Country:",
+            options=[""] + list(COUNTRIES.keys()),
+            format_func=lambda x: COUNTRIES.get(x, x),  # Display readable country names
+            key="country_select"
+        )
+
+        st.session_state.filters['category'] = st.selectbox(
+            "Select Category:",
+            options=[""] + list(CATEGORIES.keys()),
+            format_func=lambda x: CATEGORIES.get(x, x),  # Display readable category names
+            key="category_select"
+        )
+
+        st.session_state.filters['author'] = st.selectbox(
+            "Select Author:",
+            options=[""] + list(AUTHORS.keys()),
+            key="author_select"
+        )
+
+        # Use predefined sources from news_sources.py
+        source_options = [source['id'] for source in NEWS_SOURCES]
+        source_names = [source['name'] for source in NEWS_SOURCES]
+
+        st.session_state.filters['sources'] = st.multiselect("Select Sources:", options=source_options, format_func=lambda x: source_names[source_options.index(x)], key="source_select")
+
+        # Number of articles to fetch
+        st.session_state.filters['num_articles'] = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=st.session_state.filters['num_articles'], key="num_articles_input")
+
+        # Output format selection
+        output_options = [
+            "Title and Description",
+            "Title Only",
+            "Description Only",
+            "Content Only",
+            "Title, Description and Content"
+        ]
+        st.session_state.filters['output_format'] = st.selectbox("Select Output Format:", output_options, key="output_format_select")
+
+        # Move Show Published Date checkbox to the bottom of the Filters tab
+        show_date = st.checkbox("Show Published Date", value=st.session_state.show_date, key="show_date_checkbox")
+        st.session_state.show_date = show_date
 
     # About Tab
     with tabs[2]:
