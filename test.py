@@ -1,17 +1,16 @@
 import streamlit as st
-from styles import get_styles
+import streamlit_authenticator as stauth
 import requests
 import json
 from datetime import datetime, timedelta
-from database import create_table, save_api_key, load_api_key, save_user_preferences, load_user_preferences
+import sqlite3
+import secrets
+from database import create_table, save_api_key, load_api_key
 from news_sources import NEWS_SOURCES
 from countries import COUNTRIES
 from categories import CATEGORIES
 from authors import AUTHORS
 import user_database
-import secrets
-import sqlite3
-from streamlit.components.v1 import html
 
 # Database setup
 DATABASE_PATH = "news_app.db"  # Path to your SQLite database file
@@ -25,11 +24,6 @@ user_database.create_table()
 # Set the page title and layout
 st.set_page_config(page_title="Next News Search", layout="wide")
 
-st.markdown(get_styles(), unsafe_allow_html=True)
-
-# Add meta description
-st.markdown('<meta name="description" content="Next News Search is a user-friendly application that allows you to search for the latest news articles using the News API. Enter your keywords and API key to fetch relevant news articles effortlessly." />', unsafe_allow_html=True)
-
 # Static list of languages with readable names
 LANGUAGES = {
     "en": "English",
@@ -41,7 +35,7 @@ LANGUAGES = {
     "ar": "Arabic"
 }
 
-# Function to fetch news articles (from old main file)
+# Function to fetch news articles
 def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_date=None, page_size=19, page=1, language=None, country=None, category=None, author=None, sources=None):
     url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}&sortBy={sort_by}&pageSize={page_size}&page={page}"
     
@@ -71,80 +65,31 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
         st.error("Failed to fetch news articles. Please check your API key and try again.")
         return None
 
-# User Authentication with SQLite Database (No Cookies)
+# User Authentication with SQLite Database (using cookies)
 def user_authentication():
     st.sidebar.header("User Authentication")
 
-    # Generate a unique session ID
-    if 'session_id' not in st.session_state:
-        st.session_state['session_id'] = secrets.token_urlsafe(512)
+    # Initialize authenticator
+    authenticator = stauth.Authenticate(
+        user_database.get_all_users(),
+        "news_app", "auth", cookie_expiry_days=30
+    )
 
-    # Check if the user is logged in (based on session ID)
-    if 'username' in st.session_state:
-        username = st.session_state['username']
-        # Check if the session ID matches in the database
-        user = user_database.get_user_by_session_id(st.session_state['session_id'])
-        if user and user[0] == username:
-            # Check if the session is still active
-            last_activity = user_database.get_last_activity(st.session_state['session_id'])
-            if last_activity:
-                # Calculate time since last activity
-                time_elapsed = datetime.now() - last_activity
-                # Set session timeout to 9999 days (NOT RECOMMENDED)
-                session_timeout = timedelta(days=9999)  
-                if time_elapsed > session_timeout:
-                    st.session_state['is_logged_in'] = False
-                    st.session_state['username'] = ''
-                    st.sidebar.write("Session expired. Please log in again.")
-                else:
-                    # Update last activity timestamp
-                    user_database.save_last_activity(st.session_state['session_id'])
-                    st.session_state['is_logged_in'] = True
-                    st.sidebar.write(f"Logged in as: {username}")
-                    if st.sidebar.button("Logout"):
-                        st.session_state['is_logged_in'] = False
-                        st.session_state['username'] = ''
-                        st.sidebar.write("Logged out successfully.")
-        else:
-            # Session ID mismatch or user not found
-            st.session_state['is_logged_in'] = False
-            st.session_state['username'] = ''
-            st.sidebar.write("Session expired. Please log in again.")
-    else:
-        # User is not logged in
-        st.session_state['is_logged_in'] = False
-        if 'username' not in st.session_state:
-            st.session_state['username'] = ''
+    # Check if the user is logged in
+    name, authentication_status, username = authenticator.login("Login", "main")
 
-        menu = ["Login", "Register"]
-        choice = st.sidebar.selectbox("Select Action", menu)
+    if authentication_status:
+        st.success(f"Welcome *{name}*")
+        authenticator.logout("Logout", "sidebar")
+    elif authentication_status is False:
+        st.error("Username/password is incorrect")
+    elif authentication_status is None:
+        st.warning("Please enter your username and password")
 
-        if choice == "Login":
-            username = st.sidebar.text_input("Username", key="login_username")
-            password = st.sidebar.text_input("Password", type='password', key="login_password")
-            if st.sidebar.button("Login"):
-                user = user_database.get_user(username)
-                if user and user[1] == password:
-                    st.success("Logged in successfully!")
-                    st.session_state['username'] = username
-                    st.session_state['is_logged_in'] = True
-                    # Save session ID in the database
-                    user_database.save_session_id(st.session_state['session_id'], username)
-                else:
-                    st.error("Invalid username or password.")
-
-        elif choice == "Register":
-            username = st.sidebar.text_input("Choose a Username", key="register_username")
-            password = st.sidebar.text_input("Choose a Password", type='password', key="register_password")
-            if st.sidebar.button("Register"):
-                if user_database.get_user(username) is None:
-                    user_database.add_user(username, password)
-                    st.success("Registration completed! You can now log in.")
-                else:
-                    st.error("Username already exists. Please choose a different one.")
+    return authentication_status
 
 # Call the user authentication function
-user_authentication()
+authentication_status = user_authentication()
 
 # Load the API key from the database
 api_key = load_api_key()
@@ -183,7 +128,7 @@ if "show_date" not in st.session_state:
     st.session_state.show_date = False
 
 # Check if user is logged in
-if not st.session_state['is_logged_in']:
+if not authentication_status:
     st.warning("Please log in to access the application.")
 else:
     # Search Tab
@@ -193,7 +138,7 @@ else:
         # User input for search keywords
         search_word = st.text_input("Search the news...", placeholder="Enter keywords here...", key="search_input")
 
-        # Button to fetch news (icon on right)
+        # Button to fetch news
         if st.button("Search", key="search_button"):
             if api_key and search_word:
                 with st.spinner("Fetching news articles..."):
@@ -211,7 +156,7 @@ else:
                     from_date_str = from_date.strftime('%Y-%m-%d') if from_date else None
                     to_date_str = to_date.strftime('%Y-%m-%d') if to_date else None
 
-                    # Fetch articles (using the function from old main file)
+                    # Fetch articles
                     sources_str = ",".join(sources) if sources else None
                     data = fetch_news(api_key, search_word, 'relevancy', from_date_str, to_date_str, num_articles, 1, language, country, category, author, sources_str)
 
@@ -258,21 +203,6 @@ else:
     # Filters Tab
     with tabs[1]:
         st.header("Filter News")
-
-        # Menu options for filtering news
-        menu_options = ["Recent News", "Trending News", "Breaking News", "Oldest News", "Custom Date Range"]
-        selected_menu = st.selectbox("Filter News By:", menu_options, key="filter_menu")
-
-        # Date range selection
-        if selected_menu == "Custom Date Range":
-            col1, col2 = st.columns(2)
-            with col1:
-                st.session_state.filters['from_date'] = st.date_input("From Date:", value=st.session_state.filters['from_date'], key="from_date_input")
-            with col2:
-                st.session_state.filters['to_date'] = st.date_input("To Date:", value=st.session_state.filters['to_date'], key="to_date_input")
-        else:
-            st.session_state.filters['from_date'] = None
-            st.session_state.filters['to_date'] = None
 
         # Advanced filters for language, country, category, author, and sources
         st.session_state.filters['language'] = st.selectbox(
@@ -369,22 +299,6 @@ else:
                     api_key = new_api_key  # Update the local variable
                 else:
                     st.warning("Please enter a valid API key.")
-
-    # Modal feature
-    if "modal_enabled" not in st.session_state:
-        st.session_state.modal_enabled = True
-
-    # Function to close the modal
-    def close_modal():
-        st.session_state.modal_enabled = False
-
-    # Modal display using expander
-    if st.session_state.modal_enabled:
-        with st.expander("Welcome to Next News Search!", expanded=True):
-            st.write("Use this application to find the latest news articles.")
-            st.markdown("[Get your API Key here!](https://newsapi.org/register)")
-            if st.button("Close"):
-                close_modal()
 
 # Close the database connection
 conn.close()
