@@ -20,12 +20,26 @@ st.markdown(f'<meta name="description" content="{TRANSLATIONS["en"]["app_title"]
 # Load the API key from the database
 api_key = load_api_key()
 
-# Initialize session state for language selection
+# Initialize session state for filters and language if not already done
+if "filters" not in st.session_state:
+    st.session_state.filters = {
+        "language": "",
+        "sources": [],
+        "from_date": datetime.now() - timedelta(days=30),
+        "to_date": datetime.now(),
+        "num_articles": 19,
+        "output_format": "Title and Description"  # Default output format
+    }
+
 if "selected_language" not in st.session_state:
     st.session_state.selected_language = "en"  # Default language
 
 # Language selection
-selected_language = st.selectbox(TRANSLATIONS[st.session_state.selected_language]["select_language"], options=list(TRANSLATIONS.keys()), format_func=lambda x: TRANSLATIONS[x]["select_language"])
+selected_language = st.selectbox(
+    TRANSLATIONS[st.session_state.selected_language]["select_language"],
+    options=list(TRANSLATIONS.keys()),
+    format_func=lambda x: TRANSLATIONS[x]["select_language"]
+)
 st.session_state.selected_language = selected_language  # Save selected language in session state
 
 # Streamlit app layout
@@ -63,22 +77,10 @@ def fetch_sources(api_key):
         return []
 
 # Streamlit app layout
-tabs = st.tabs([TRANSLATIONS[st.session_state.selected_language]["search_tab"], TRANSLATIONS[st.session_state.selected_language]["filters_tab"], TRANSLATIONS[st.session_state.selected_language]["about_tab"], TRANSLATIONS[st.session_state.selected_language]["settings_tab"]])
-
-# Initialize session state for filters if not already done
-if "filters" not in st.session_state:
-    st.session_state.filters = {
-        "language": "",
-        "sources": [],
-        "from_date": datetime.now() - timedelta(days=30),
-        "to_date": datetime.now(),
-        "num_articles": 19,
-        "output_format": "Title and Description"  # Default output format
-    }
-
-# Initialize session state for "show_date" if not already done
-if "show_date" not in st.session_state:
-    st.session_state.show_date = False
+tabs = st.tabs([TRANSLATIONS[st.session_state.selected_language]["search_tab"], 
+                TRANSLATIONS[st.session_state.selected_language]["filters_tab"], 
+                TRANSLATIONS[st.session_state.selected_language]["about_tab"], 
+                TRANSLATIONS[st.session_state.selected_language]["settings_tab"]])
 
 # Search Tab
 with tabs[0]:
@@ -91,7 +93,7 @@ with tabs[0]:
         if api_key and search_word:
             with st.spinner(TRANSLATIONS[st.session_state.selected_language]["fetching_news"]):
                 # Use filters from session state
-                language = st.session_state.filters['language']
+                language = st.session_state.filters['language'] or st.session_state.selected_language  # Use selected language
                 sources = st.session_state.filters['sources']
                 from_date = st.session_state.filters['from_date']
                 to_date = st.session_state.filters['to_date']
@@ -127,14 +129,18 @@ with tabs[0]:
             else:
                 st.warning(TRANSLATIONS[st.session_state.selected_language]["no_articles_found"])
         else:
-            st.warning("Please enter both your API key and search keywords.")
+            st.warning(TRANSLATIONS[st.session_state.selected_language]["please_enter_valid_api_key"])
 
 # Filters Tab
 with tabs[1]:
     st.header(TRANSLATIONS[st.session_state.selected_language]["filter_news_by"])
     
     # Menu options for filtering news
-    menu_options = [TRANSLATIONS[st.session_state.selected_language]["recent_news"], TRANSLATIONS[st.session_state.selected_language]["trending_news"], TRANSLATIONS[st.session_state.selected_language]["breaking_news"], TRANSLATIONS[st.session_state.selected_language]["oldest_news"], TRANSLATIONS[st.session_state.selected_language]["custom_date_range"]]
+    menu_options = [TRANSLATIONS[st.session_state.selected_language]["recent_news"], 
+                    TRANSLATIONS[st.session_state.selected_language]["trending_news"], 
+                    TRANSLATIONS[st.session_state.selected_language]["breaking_news"], 
+                    TRANSLATIONS[st.session_state.selected_language]["oldest_news"], 
+                    TRANSLATIONS[st.session_state.selected_language]["custom_date_range"]]
     selected_menu = st.selectbox(TRANSLATIONS[st.session_state.selected_language]["filter_news_by"], menu_options)
 
     # Date range selection
@@ -179,10 +185,10 @@ with tabs[1]:
 
 # About Tab
 with tabs[2]:
-    st.write("""
-    **""" + TRANSLATIONS[st.session_state.selected_language]["about_next_news"] + """**
+    st.write(f"""
+    **{TRANSLATIONS[st.session_state.selected_language]["about_next_news"]}**
     
-    """ + TRANSLATIONS[st.session_state.selected_language]["welcome_message"] + """
+    {TRANSLATIONS[st.session_state.selected_language]["welcome_message"]}
     """)
 
 # Settings Tab
