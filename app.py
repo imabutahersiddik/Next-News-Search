@@ -4,17 +4,32 @@ import requests
 import json
 from datetime import datetime, timedelta
 from database import create_table, save_api_key, load_api_key, save_user_preferences, load_user_preferences
+from translations import TRANSLATIONS  # Import translations
 
 # Initialize database and create table
 create_table()
 
 # Set the page title and layout
-st.set_page_config(page_title="Next News Search", layout="wide")
+st.set_page_config(page_title=TRANSLATIONS["en"]["app_title"], layout="wide")
 
 st.markdown(get_styles(), unsafe_allow_html=True)
 
 # Add meta description
-st.markdown('<meta name="description" content="Next News Search is a user-friendly application that allows you to search for the latest news articles using the News API. Enter your keywords and API key to fetch relevant news articles effortlessly." />', unsafe_allow_html=True)
+st.markdown(f'<meta name="description" content="{TRANSLATIONS["en"]["app_title"]} is a user-friendly application that allows you to search for the latest news articles using the News API. Enter your keywords and API key to fetch relevant news articles effortlessly." />', unsafe_allow_html=True)
+
+# Load the API key from the database
+api_key = load_api_key()
+
+# Initialize session state for language selection
+if "selected_language" not in st.session_state:
+    st.session_state.selected_language = "en"  # Default language
+
+# Language selection
+selected_language = st.selectbox(TRANSLATIONS[st.session_state.selected_language]["select_language"], options=list(TRANSLATIONS.keys()), format_func=lambda x: TRANSLATIONS[x]["select_language"])
+st.session_state.selected_language = selected_language  # Save selected language in session state
+
+# Streamlit app layout
+st.markdown(f"<h1 style='text-align: center;'>{TRANSLATIONS[st.session_state.selected_language]['app_title']}</h1>", unsafe_allow_html=True)
 
 # Function to fetch news articles
 def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_date=None, page_size=19, page=1, language=None, sources=None):
@@ -34,7 +49,7 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
     if response.status_code == 200:
         return json.loads(response.text)
     else:
-        st.error("Failed to fetch news articles. Please check your API key and try again.")
+        st.error(TRANSLATIONS[st.session_state.selected_language]["no_articles_found"])
         return None
 
 # Function to fetch available sources
@@ -44,17 +59,11 @@ def fetch_sources(api_key):
     if response.status_code == 200:
         return json.loads(response.text)['sources']
     else:
-        st.error("Failed to fetch sources. Please check your API key and try again.")
+        st.error(TRANSLATIONS[st.session_state.selected_language]["no_articles_found"])
         return []
 
 # Streamlit app layout
-st.markdown("<h1 style='text-align: center;'>Next News Search</h1>", unsafe_allow_html=True)
-
-# Load the API key from the database
-api_key = load_api_key()
-
-# Create tabs for Search, Filters, About, and Settings
-tabs = st.tabs(["Search", "Filters", "About", "Settings"])
+tabs = st.tabs([TRANSLATIONS[st.session_state.selected_language]["search_tab"], TRANSLATIONS[st.session_state.selected_language]["filters_tab"], TRANSLATIONS[st.session_state.selected_language]["about_tab"], TRANSLATIONS[st.session_state.selected_language]["settings_tab"]])
 
 # Initialize session state for filters if not already done
 if "filters" not in st.session_state:
@@ -75,12 +84,12 @@ if "show_date" not in st.session_state:
 with tabs[0]:
     
     # User input for search keywords
-    search_word = st.text_input("", placeholder="Search the news...", key="search_input")
+    search_word = st.text_input("", placeholder=TRANSLATIONS[st.session_state.selected_language]["search_placeholder"], key="search_input")
     
-    # Button to fetch news (icon on right)
-    if st.button("Search", key="search_button"):
+    # Button to fetch news (text only)
+    if st.button(TRANSLATIONS[st.session_state.selected_language]["search_button"], key="search_button"):
         if api_key and search_word:
-            with st.spinner("Fetching news articles..."):
+            with st.spinner(TRANSLATIONS[st.session_state.selected_language]["fetching_news"]):
                 # Use filters from session state
                 language = st.session_state.filters['language']
                 sources = st.session_state.filters['sources']
@@ -102,25 +111,9 @@ with tabs[0]:
                 results = ""
 
                 for article in articles:
-                    if st.session_state.filters['output_format'] == "Title and Description":
-                        st.subheader(article['title'])
-                        st.write(article['description'])
-                        results += f"**{article['title']}**\n{article['description']}\n\n"
-                    elif st.session_state.filters['output_format'] == "Title Only":
-                        st.subheader(article['title'])
-                        results += f"**{article['title']}**\n\n"
-                    elif st.session_state.filters['output_format'] == "Description Only":
-                        st.write(article['description'])
-                        results += f"{article['description']}\n\n"
-                    elif st.session_state.filters['output_format'] == "Content Only":
-                        st.subheader(article['title'])
-                        st.write(article['content'])
-                        results += f"**{article['title']}**\n{article['content']}\n\n"
-                    elif st.session_state.filters['output_format'] == "Title, Description and Content":
-                        st.subheader(article['title'])
-                        st.write(article['description'])
-                        st.write(article['content'])
-                        results += f"**{article['title']}**\n{article['description']}\n{article['content']}\n\n"
+                    st.subheader(article['title'])
+                    st.write(article['description'])
+                    results += f"**{article['title']}**\n{article['description']}\n\n"
 
                     if st.session_state.show_date:
                         st.write(f"Published: {article['publishedAt']}")
@@ -128,35 +121,35 @@ with tabs[0]:
                     st.write("-" * 20)
 
                 # Show results in an expander
-                with st.expander("Save Results", expanded=False):
-                    st.text_area("Copy Results", value=results, height=300)
+                with st.expander(TRANSLATIONS[st.session_state.selected_language]["save_results"], expanded=False):
+                    st.text_area(TRANSLATIONS[st.session_state.selected_language]["copy_results"], value=results, height=300)
 
             else:
-                st.warning("No articles found for your search query or an error occurred.")
+                st.warning(TRANSLATIONS[st.session_state.selected_language]["no_articles_found"])
         else:
             st.warning("Please enter both your API key and search keywords.")
 
 # Filters Tab
 with tabs[1]:
-    st.header("Filter News")
+    st.header(TRANSLATIONS[st.session_state.selected_language]["filter_news_by"])
     
     # Menu options for filtering news
-    menu_options = ["Recent News", "Trending News", "Breaking News", "Oldest News", "Custom Date Range"]
-    selected_menu = st.selectbox("Filter News By:", menu_options)
+    menu_options = [TRANSLATIONS[st.session_state.selected_language]["recent_news"], TRANSLATIONS[st.session_state.selected_language]["trending_news"], TRANSLATIONS[st.session_state.selected_language]["breaking_news"], TRANSLATIONS[st.session_state.selected_language]["oldest_news"], TRANSLATIONS[st.session_state.selected_language]["custom_date_range"]]
+    selected_menu = st.selectbox(TRANSLATIONS[st.session_state.selected_language]["filter_news_by"], menu_options)
 
     # Date range selection
-    if selected_menu == "Custom Date Range":
+    if selected_menu == TRANSLATIONS[st.session_state.selected_language]["custom_date_range"]:
         col1, col2 = st.columns(2)
         with col1:
-            st.session_state.filters['from_date'] = st.date_input("From Date:", value=st.session_state.filters['from_date'])
+            st.session_state.filters['from_date'] = st.date_input(TRANSLATIONS[st.session_state.selected_language]["from_date"], value=st.session_state.filters['from_date'])
         with col2:
-            st.session_state.filters['to_date'] = st.date_input("To Date:", value=st.session_state.filters['to_date'])
+            st.session_state.filters['to_date'] = st.date_input(TRANSLATIONS[st.session_state.selected_language]["to_date"], value=st.session_state.filters['to_date'])
     else:
         st.session_state.filters['from_date'] = None
         st.session_state.filters['to_date'] = None
 
     # Advanced filters for language and sources
-    st.session_state.filters['language'] = st.selectbox("Select Language:", options=["", "en", "es", "fr", "de", "it", "zh", "ar"], index=0)
+    st.session_state.filters['language'] = st.selectbox(TRANSLATIONS[st.session_state.selected_language]["select_language"], options=["", "en", "es", "fr", "de", "it", "zh", "ja", "ko", "hi", "ur", "ar", "bn", "ru"], index=0)
 
     # Fetch available sources from the API
     if api_key:
@@ -165,69 +158,65 @@ with tabs[1]:
     else:
         source_options = []
 
-    st.session_state.filters['sources'] = st.multiselect("Select Sources:", options=source_options)
+    st.session_state.filters['sources'] = st.multiselect(TRANSLATIONS[st.session_state.selected_language]["select_sources"], options=source_options)
 
     # Number of articles to fetch
-    st.session_state.filters['num_articles'] = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=st.session_state.filters['num_articles'])
+    st.session_state.filters['num_articles'] = st.number_input(TRANSLATIONS[st.session_state.selected_language]["num_articles"], min_value=1, max_value=100, value=st.session_state.filters['num_articles'])
 
     # Output format selection
     output_options = [
-        "Title and Description",
-        "Title Only",
-        "Description Only",
-        "Content Only",
-        "Title, Description and Content"
+        TRANSLATIONS[st.session_state.selected_language]["title_and_description"],
+        TRANSLATIONS[st.session_state.selected_language]["title_only"],
+        TRANSLATIONS[st.session_state.selected_language]["description_only"],
+        TRANSLATIONS[st.session_state.selected_language]["content_only"],
+        TRANSLATIONS[st.session_state.selected_language]["title_description_content"]
     ]
-    st.session_state.filters['output_format'] = st.selectbox("Select Output Format:", output_options)
+    st.session_state.filters['output_format'] = st.selectbox(TRANSLATIONS[st.session_state.selected_language]["select_output_format"], output_options)
 
     # Move Show Published Date checkbox to the bottom of the Filters tab
-    show_date = st.checkbox("Show Published Date", value=st.session_state.show_date)
+    show_date = st.checkbox(TRANSLATIONS[st.session_state.selected_language]["show_published_date"], value=st.session_state.show_date)
     st.session_state.show_date = show_date
 
 # About Tab
 with tabs[2]:
     st.write("""
-    **About Next News Search**
+    **""" + TRANSLATIONS[st.session_state.selected_language]["about_next_news"] + """**
     
-    This application allows you to search for news articles using the News API. 
-    You can enter your API key to fetch articles based on your search keywords. 
-    Your API key will be saved in the current session.
-    
-    Explore the latest news articles effortlessly and customize your search with various filters!
+    """ + TRANSLATIONS[st.session_state.selected_language]["welcome_message"] + """
     """)
 
 # Settings Tab
 with tabs[3]:
-    st.header("Settings")
+    st.header(TRANSLATIONS[st.session_state.selected_language]["settings_tab"])
     
     if api_key:
-        st.write("Current API Key: **" + api_key + "**")
+        st.write(TRANSLATIONS[st.session_state.selected_language]["current_api_key"] + ": **" + api_key + "**")
         
         # Option to update or remove the API key
-        new_api_key = st.text_input("Update API Key:", placeholder="Enter new API key here")
+        new_api_key = st.text_input(TRANSLATIONS[st.session_state.selected_language]["update_api_key"], placeholder=TRANSLATIONS[st.session_state.selected_language]["enter_api_key"])
         
-        if st.button("Update API Key"):
+        if st.button(TRANSLATIONS[st.session_state.selected_language]["update_api_key"]):
             if new_api_key:
                 save_api_key(new_api_key)
-                st.success("API Key updated successfully!")
+                st.success(TRANSLATIONS[st.session_state.selected_language]["api_key_updated"])
                 api_key = new_api_key  # Update the local variable
             else:
-                st.warning("Please enter a valid API key.")
+                st.warning(TRANSLATIONS[st.session_state.selected_language]["please_enter_valid_api_key"])
         
-        if st.button("Remove API Key"):
+        if st.button(TRANSLATIONS[st.session_state.selected_language]["remove_api_key"]):
             save_api_key(None)  # Remove the API key
             api_key = None  # Clear the local variable
-            st.success("API Key removed successfully!")
+            st.success(TRANSLATIONS[st.session_state.selected_language]["api_key_removed"])
     else:
-        st.write("No API Key found.")
-        new_api_key = st.text_input("Enter your News API key:")
-        if st.button("Save API Key"):
+        st.write(TRANSLATIONS[st.session_state.selected_language]["no_api_key_found"])
+        new_api_key = st.text_input(TRANSLATIONS[st.session_state.selected_language]["enter_api_key"])
+        if st.button(TRANSLATIONS[st.session_state.selected_language]["save_api_key"]):
             if new_api_key:
                 save_api_key(new_api_key)
-                st.success("API Key saved successfully!")
+                st.success(TRANSLATIONS[st.session_state.selected_language]["api_key_saved"])
                 api_key = new_api_key  # Update the local variable
             else:
-                st.warning("Please enter a valid API key.")
+                st.warning(TRANSLATIONS[st.session_state.selected_language]["please_enter_valid_api_key"])
 
 # Modal feature
 if "modal_enabled" not in st.session_state:
@@ -239,8 +228,8 @@ def close_modal():
 
 # Modal display using expander
 if st.session_state.modal_enabled:
-    with st.expander("Welcome to Next News Search!", expanded=True):
-        st.write("Use this application to find the latest news articles.")
+    with st.expander(TRANSLATIONS[st.session_state.selected_language]["welcome_message"], expanded=True):
+        st.write(TRANSLATIONS[st.session_state.selected_language]["welcome_message"])
         st.markdown("[Get your API Key here!](https://newsapi.org/register)")
-        if st.button("Close"):
+        if st.button(TRANSLATIONS[st.session_state.selected_language]["close"]):
             close_modal()
