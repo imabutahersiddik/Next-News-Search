@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 from styles import get_styles
 import requests
@@ -12,12 +11,10 @@ from authors import AUTHORS
 import user_database
 import secrets
 import sqlite3
-import yaml
 from streamlit.components.v1 import html
 
-# Load configuration from YAML file
-with open("config.yaml", "r") as f:
-    config = yaml.safe_load(f)
+# Import your config.py file
+from config import config  
 
 # Database setup
 DATABASE_PATH = "news_app.db"  # Path to your SQLite database file
@@ -83,7 +80,7 @@ def user_authentication():
 
     # Generate a unique session ID
     if 'session_id' not in st.session_state:
-        st.session_state['session_id'] = secrets.token_urlsafe(32)
+        st.session_state['session_id'] = secrets.token_urlsafe(512)
 
     # Check if a cookie exists
     if 'username' in st.cookies:
