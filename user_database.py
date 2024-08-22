@@ -57,7 +57,7 @@ def get_user_by_session_id(session_id):
     cursor.execute("SELECT username FROM sessions WHERE session_id = ?", (session_id,))
     result = cursor.fetchone()
     conn.close()
-    return result
+    return result[0] if result else None
 
 def get_last_activity(session_id):
     """Retrieves the last activity timestamp for a given session ID."""
@@ -83,6 +83,3 @@ def remove_session_id(session_id):
     cursor.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
     conn.commit()
     conn.close()
-
-# Create tables if they don't exist
-create_table()
