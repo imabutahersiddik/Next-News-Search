@@ -242,6 +242,7 @@ with tabs[3]:
                 st.warning("Please enter a valid API key.")
         
         if st.button("Remove API Key"):
+            print("Attempting to remove API key...")
             save_api_key(None)  # Remove the API key
             api_key = None  # Clear the local variable
             st.success("API Key removed successfully!")
