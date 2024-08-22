@@ -2,18 +2,14 @@ import streamlit as st
 from styles import get_styles
 import requests
 import json
-import random
 from datetime import datetime, timedelta
-from database import create_table, save_api_key, load_api_keys
-from user_management import register_user, login_user, save_user_preferences, load_user_preferences
-from admin_dashboard import fetch_total_users, fetch_free_users, fetch_subscription_users, fetch_total_searches
-from user_dashboard import get_user_details
+from database import create_table, save_api_key, load_api_key, save_user_preferences, load_user_preferences
 from news_sources import NEWS_SOURCES
 from countries import COUNTRIES
 from categories import CATEGORIES
-from authors import AUTHORS
+from authors import AUTHORS  # Import the AUTHORS dictionary
 
-# Initialize database and create tables
+# Initialize database and create table
 create_table()
 
 # Set the page title and layout
@@ -36,8 +32,7 @@ LANGUAGES = {
 }
 
 # Function to fetch news articles
-def fetch_news(api_keys, search_word, sort_by='relevancy', from_date=None, to_date=None, page_size=19, page=1, language=None, country=None, category=None, author=None, sources=None):
-    api_key = random.choice(api_keys)  # Randomly select an API key
+def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_date=None, page_size=19, page=1, language=None, country=None, category=None, author=None, sources=None):
     url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}&sortBy={sort_by}&pageSize={page_size}&page={page}"
     
     if from_date and to_date:
@@ -69,93 +64,112 @@ def fetch_news(api_keys, search_word, sort_by='relevancy', from_date=None, to_da
 # Streamlit app layout
 st.markdown("<h1 style='text-align: center;'>Next News Search</h1>", unsafe_allow_html=True)
 
-# User Authentication
-if "user" not in st.session_state:
-    st.session_state.user = None
+# Load the API key from the database
+api_key = load_api_key()
 
-# Create tabs for Registration, Login, Search, Filters, About, and Settings
-tabs = st.tabs(["Register", "Login", "Search", "Filters", "About", "Settings"])
-
-# Registration Tab
-with tabs[0]:
-    st.header("Register")
-    username = st.text_input("Username")
-    full_name = st.text_input("Full Name")
-    country = st.selectbox("Country", options=COUNTRIES.keys())
-    email = st.text_input("Email")
-    password = st.text_input("Password", type="password")
-    
-    if st.button("Register"):
-        if register_user(username, full_name, country, email, password):
-            st.success("Registration successful!")
+# Prompt for API key if not available
+if not api_key:
+    st.warning("Please enter your API key to use the application.")
+    new_api_key = st.text_input("Enter your News API key:", key="new_api_key_input")
+    if st.button("Save API Key", key="save_api_key_button"):
+        if new_api_key:
+            save_api_key(new_api_key)
+            st.success("API Key saved successfully!")
+            api_key = new_api_key  # Update the local variable
         else:
-            st.error("Username or email already exists.")
+            st.warning("Please enter a valid API key.")
 
-# Login Tab
-with tabs[1]:
-    st.header("Login")
-    username = st.text_input("Username", key="login_username")
-    password = st.text_input("Password", type="password", key="login_password")
-    
-    if st.button("Login"):
-        user = login_user(username, password)
-        if user:
-            st.session_state.user = user  # Store user in session state
-            st.success("Login successful!")
-        else:
-            st.error("Invalid username or password.")
+# Create tabs for Search, Filters, About, and Settings
+tabs = st.tabs(["Search", "Filters", "About", "Settings"])
+
+# Initialize session state for filters if not already done
+if "filters" not in st.session_state:
+    st.session_state.filters = {
+        "language": "",
+        "country": "",
+        "category": "",
+        "author": "",
+        "sources": [],
+        "from_date": datetime.now() - timedelta(days=30),
+        "to_date": datetime.now(),
+        "num_articles": 19,
+        "output_format": "Title and Description"  # Default output format
+    }
+
+# Initialize session state for "show_date" if not already done
+if "show_date" not in st.session_state:
+    st.session_state.show_date = False
 
 # Search Tab
-with tabs[2]:
-    if st.session_state.user:
-        api_keys = load_api_keys(st.session_state.user[1])  # Load API keys for the logged-in user
-        search_word = st.text_input("", placeholder="Search the news...", key="search_input")
-        
-        if st.button("Search", key="search_button"):
-            if api_keys and search_word:
-                with st.spinner("Fetching news articles..."):
-                    # Use filters from session state
-                    language = st.session_state.filters['language']
-                    country = st.session_state.filters['country']
-                    category = st.session_state.filters['category']
-                    author = st.session_state.filters['author']
-                    sources = st.session_state.filters['sources']
-                    from_date = st.session_state.filters['from_date']
-                    to_date = st.session_state.filters['to_date']
-                    num_articles = st.session_state.filters['num_articles']
-                    
-                    # Convert dates to string format
-                    from_date_str = from_date.strftime('%Y-%m-%d') if from_date else None
-                    to_date_str = to_date.strftime('%Y-%m-%d') if to_date else None
-                    
-                    # Fetch articles
-                    sources_str = ",".join(sources) if sources else None
-                    data = fetch_news(api_keys, search_word, 'relevancy', from_date_str, to_date_str, num_articles, 1, language, country, category, author, sources_str)
-                    
-                # Check if data is not None and contains 'articles'
-                if data and 'articles' in data:
-                    articles = data['articles']
-                    results = ""
+with tabs[0]:
+    
+    # User input for search keywords
+    search_word = st.text_input("", placeholder="Search the news...", key="search_input")
+    
+    # Button to fetch news (icon on right)
+    if st.button("Search", key="search_button"):
+        if api_key and search_word:
+            with st.spinner("Fetching news articles..."):
+                # Use filters from session state
+                language = st.session_state.filters['language']
+                country = st.session_state.filters['country']
+                category = st.session_state.filters['category']
+                author = st.session_state.filters['author']
+                sources = st.session_state.filters['sources']
+                from_date = st.session_state.filters['from_date']
+                to_date = st.session_state.filters['to_date']
+                num_articles = st.session_state.filters['num_articles']
+                
+                # Convert dates to string format
+                from_date_str = from_date.strftime('%Y-%m-%d') if from_date else None
+                to_date_str = to_date.strftime('%Y-%m-%d') if to_date else None
+                
+                # Fetch articles
+                sources_str = ",".join(sources) if sources else None
+                data = fetch_news(api_key, search_word, 'relevancy', from_date_str, to_date_str, num_articles, 1, language, country, category, author, sources_str)
+                
+            # Check if data is not None and contains 'articles'
+            if data and 'articles' in data:
+                articles = data['articles']
+                results = ""
 
-                    for article in articles:
+                for article in articles:
+                    if st.session_state.filters['output_format'] == "Title and Description":
                         st.subheader(article['title'])
                         st.write(article['description'])
                         results += f"**{article['title']}**\n{article['description']}\n\n"
-                        st.write("-" * 20)
+                    elif st.session_state.filters['output_format'] == "Title Only":
+                        st.subheader(article['title'])
+                        results += f"**{article['title']}**\n\n"
+                    elif st.session_state.filters['output_format'] == "Description Only":
+                        st.write(article['description'])
+                        results += f"{article['description']}\n\n"
+                    elif st.session_state.filters['output_format'] == "Content Only":
+                        st.subheader(article['title'])
+                        st.write(article['content'])
+                        results += f"**{article['title']}**\n{article['content']}\n\n"
+                    elif st.session_state.filters['output_format'] == "Title, Description and Content":
+                        st.subheader(article['title'])
+                        st.write(article['description'])
+                        st.write(article['content'])
+                        results += f"**{article['title']}**\n{article['description']}\n{article['content']}\n\n"
 
-                    # Show results in an expander
-                    with st.expander("Save Results", expanded=False):
-                        st.text_area("Copy Results", value=results, height=300)
+                    if st.session_state.show_date:
+                        st.write(f"Published: {article['publishedAt']}")
 
-                else:
-                    st.warning("No articles found for your search query or an error occurred.")
+                    st.write("-" * 20)
+
+                # Show results in an expander
+                with st.expander("Save Results", expanded=False):
+                    st.text_area("Copy Results", value=results, height=300)
+
             else:
-                st.warning("Please enter both your API key and search keywords.")
-    else:
-        st.warning("Please log in to search for news articles.")
+                st.warning("No articles found for your search query or an error occurred.")
+        else:
+            st.warning("Please enter both your API key and search keywords.")
 
 # Filters Tab
-with tabs[3]:
+with tabs[1]:
     st.header("Filter News")
     
     # Menu options for filtering news
@@ -225,7 +239,7 @@ with tabs[3]:
     st.session_state.show_date = show_date
 
 # About Tab
-with tabs[4]:
+with tabs[2]:
     st.write("""
     **About Next News Search**
     
@@ -237,28 +251,37 @@ with tabs[4]:
     """)
 
 # Settings Tab
-with tabs[5]:
-    if st.session_state.user:
-        st.header("Settings")
-        api_keys = load_api_keys(st.session_state.user[1])  # Load API keys for the logged-in user
-        st.write("Current API Keys: **" + ", ".join(api_keys) + "**")
-
-        new_api_key = st.text_input("Add API Key:", placeholder="Enter new API key here", key="new_api_key_input")
+with tabs[3]:
+    st.header("Settings")
+    
+    if api_key:
+        st.write("Current API Key: **" + api_key + "**")
         
-        if st.button("Add API Key"):
-            api_keys.append(new_api_key)
-            save_user_preferences({'language': st.session_state.filters['language'], 'sources': api_keys, 'output_format': st.session_state.filters['output_format']})
-            st.success("API Key added successfully!")
+        # Option to update or remove the API key
+        new_api_key = st.text_input("Update API Key:", placeholder="Enter new API key here", key="update_api_key_input")
         
-        if st.button("Remove API Key"):
-            if new_api_key in api_keys:
-                api_keys.remove(new_api_key)  # Remove the selected API key
-                save_user_preferences({'language': st.session_state.filters['language'], 'sources': api_keys, 'output_format': st.session_state.filters['output_format']})
-                st.success("API Key removed successfully!")
+        if st.button("Update API Key", key="update_api_key_button"):
+            if new_api_key:
+                save_api_key(new_api_key)
+                st.success("API Key updated successfully!")
+                api_key = new_api_key  # Update the local variable
             else:
-                st.error("API Key not found.")
+                st.warning("Please enter a valid API key.")
+        
+        if st.button("Remove API Key", key="remove_api_key_button"):
+            save_api_key(None)  # Remove the API key
+            api_key = None  # Clear the local variable
+            st.success("API Key removed successfully!")
     else:
-        st.write("No user logged in.")
+        st.write("No API Key found.")
+        new_api_key = st.text_input("Enter your News API key:", key="new_api_key_input_2")
+        if st.button("Save API Key", key="save_api_key_button_2"):
+            if new_api_key:
+                save_api_key(new_api_key)
+                st.success("API Key saved successfully!")
+                api_key = new_api_key  # Update the local variable
+            else:
+                st.warning("Please enter a valid API key.")
 
 # Modal feature
 if "modal_enabled" not in st.session_state:
