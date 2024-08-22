@@ -117,6 +117,22 @@ def load_api_keys(username):
     conn.close()
     return []
 
+# Function to load a single API key for a user (if needed)
+def load_api_key(username):
+    conn = sqlite3.connect('news_search.db')
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT id FROM users WHERE username = ?', (username,))
+    user_id = cursor.fetchone()
+    
+    if user_id:
+        cursor.execute('SELECT key FROM api_keys WHERE user_id = ?', (user_id[0],))
+        result = cursor.fetchone()
+        return result[0] if result else None
+    
+    conn.close()
+    return None
+
 # Function to save user preferences
 def save_user_preferences(username, preferences):
     conn = sqlite3.connect('news_search.db')
