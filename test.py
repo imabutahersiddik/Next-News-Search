@@ -8,7 +8,7 @@ from news_sources import NEWS_SOURCES
 from countries import COUNTRIES
 from categories import CATEGORIES
 from authors import AUTHORS
-from user_database import create_user_table, register_user, verify_user, get_user_by_session_id, save_session_id
+from user_database import create_user_table, create_session_table, register_user, verify_user, get_user_by_session_id, save_session_id
 import secrets
 import sqlite3
 
@@ -20,6 +20,7 @@ cursor = conn.cursor()
 # Initialize database and create tables
 create_table()
 create_user_table()
+create_session_table() # Add this line to create the sessions table
 
 # Set the page title and layout
 st.set_page_config(page_title="Next News Search", layout="wide")
