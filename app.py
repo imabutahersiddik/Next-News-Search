@@ -42,10 +42,10 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
         url += f"&language={language}"
     
     if country:
-        url += f"&country={COUNTRIES.get(country, country)}"  # Use the country code from the COUNTRIES dictionary
+        url += f"&country={country}"
     
     if category:
-        url += f"&category={CATEGORIES.get(category, category)}"  # Use the category name from the CATEGORIES dictionary
+        url += f"&category={category}"
     
     if author:
         url += f"&author={author}"
@@ -104,7 +104,7 @@ if "show_date" not in st.session_state:
 with tabs[0]:
     
     # User input for search keywords
-    search_word = st.text_input("", placeholder="Search the news...", key="search_input")
+    search_word = st.text_input("Search the news...", placeholder="Enter keywords here...", key="search_input")
     
     # Button to fetch news (icon on right)
     if st.button("Search", key="search_button"):
@@ -131,10 +131,10 @@ with tabs[0]:
                     url += f"&language={language}"
                 
                 if country:
-                    url += f"&country={COUNTRIES.get(country, country)}"  # Use the country code from the COUNTRIES dictionary
+                    url += f"&country={country}"
                 
                 if category:
-                    url += f"&category={CATEGORIES.get(category, category)}"  # Use the category name from the CATEGORIES dictionary
+                    url += f"&category={category}"
                 
                 if author:
                     url += f"&author={author}"
@@ -149,7 +149,7 @@ with tabs[0]:
                 
                 if response.status_code == 200:
                     data = json.loads(response.text)
-                    articles = data['articles']
+                    articles = data.get('articles', [])
                     
                     # Display articles based on the selected output format
                     for article in articles:
