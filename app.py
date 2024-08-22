@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from database import create_table, save_api_key, load_api_key, save_user_preferences, load_user_preferences
 from news_sources import NEWS_SOURCES
 from countries import COUNTRIES
-from categories import CATEGORIES
+from categories import CATEGORIES  # Import the CATEGORIES dictionary
 
 # Initialize database and create table
 create_table()
@@ -198,7 +198,8 @@ with tabs[1]:
 
     st.session_state.filters['category'] = st.selectbox(
         "Select Category:",
-        options=[""] + CATEGORIES,
+        options=[""] + list(CATEGORIES.keys()),
+        format_func=lambda x: CATEGORIES.get(x, x),  # Display readable category names
         key="category_select"
     )
 
