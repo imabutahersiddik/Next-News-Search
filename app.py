@@ -48,8 +48,6 @@ if "selected_language" not in st.session_state:
 if "show_date" not in st.session_state:
     st.session_state.show_date = False  # Default value for show_date
 
-# Language selection moved to the Settings Tab
-
 # Streamlit app layout
 st.markdown(f"<h1 style='text-align: center;'>{TRANSLATIONS[st.session_state.selected_language]['app_title']}</h1>", unsafe_allow_html=True)
 
@@ -236,7 +234,7 @@ with tabs[3]:
     selected_language = st.selectbox(
         TRANSLATIONS[st.session_state.selected_language]["select_language"],
         options=list(TRANSLATIONS.keys()),
-        format_func=lambda x: TRANSLATIONS[x]["select_language"]
+        format_func=lambda x: TRANSLATIONS[x]["language_name"]  # Use the "language_name" key for display
     )
     st.session_state.selected_language = selected_language  # Save selected language in session state
 
