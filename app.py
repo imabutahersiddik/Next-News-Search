@@ -124,9 +124,6 @@ with tabs[0]:
                 from_date_str = from_date.strftime('%Y-%m-%d') if from_date else None
                 to_date_str = to_date.strftime('%Y-%m-%d') if to_date else None
                 
-                # Fetch articles
-                sources_str = ",".join(sources) if sources else None
-                
                 # Construct the API request URL based on selected filters
                 url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}&sortBy=relevancy&pageSize={num_articles}&page=1"
                 
@@ -134,16 +131,16 @@ with tabs[0]:
                     url += f"&language={language}"
                 
                 if country:
-                    url += f"&country={country}"
+                    url += f"&country={COUNTRIES.get(country, country)}"  # Use the country code from the COUNTRIES dictionary
                 
                 if category:
-                    url += f"&category={category}"
+                    url += f"&category={CATEGORIES.get(category, category)}"  # Use the category name from the CATEGORIES dictionary
                 
                 if author:
                     url += f"&author={author}"
                 
                 if sources:
-                    url += f"&sources={sources_str}"
+                    url += f"&sources={','.join(sources)}"
                 
                 if from_date_str and to_date_str:
                     url += f"&from={from_date_str}&to={to_date_str}"
