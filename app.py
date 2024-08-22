@@ -179,4 +179,85 @@ with tabs[1]:
 
     # Use predefined sources from news_sources.py
     source_options = [source['id'] for source in NEWS_SOURCES]
-    source_names =
+    source_names = [source['name'] for source in NEWS_SOURCES]
+    
+    st.session_state.filters['sources'] = st.multiselect("Select Sources:", options=source_options, format_func=lambda x: source_names[source_options.index(x)], key="source_select")
+
+    # Number of articles to fetch
+    st.session_state.filters['num_articles'] = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=st.session_state.filters['num_articles'], key="num_articles_input")
+
+    # Output format selection
+    output_options = [
+        "Title and Description",
+        "Title Only",
+        "Description Only",
+        "Content Only",
+        "Title, Description and Content"
+    ]
+    st.session_state.filters['output_format'] = st.selectbox("Select Output Format:", output_options, key="output_format_select")
+
+    # Move Show Published Date checkbox to the bottom of the Filters tab
+    show_date = st.checkbox("Show Published Date", value=st.session_state.show_date, key="show_date_checkbox")
+    st.session_state.show_date = show_date
+
+# About Tab
+with tabs[2]:
+    st.write("""
+    **About Next News Search**
+    
+    This application allows you to search for news articles using the News API. 
+    You can enter your API key to fetch articles based on your search keywords. 
+    Your API key will be saved in the current session.
+    
+    Explore the latest news articles effortlessly and customize your search with various filters!
+    """)
+
+# Settings Tab
+with tabs[3]:
+    st.header("Settings")
+    
+    if api_key:
+        st.write("Current API Key: **" + api_key + "**")
+        
+        # Option to update or remove the API key
+        new_api_key = st.text_input("Update API Key:", placeholder="Enter new API key here", key="update_api_key_input")
+        
+        if st.button("Update API Key", key="update_api_key_button"):
+            if new_api_key:
+                save_api_key(new_api_key)
+                st.success("API Key updated successfully!")
+                api_key = new_api_key  # Update the local variable
+            else:
+                st.warning("Please enter a valid API key.")
+        
+        if st.button("Remove API Key", key="remove_api_key_button"):
+            print("Attempting to remove API key...")
+            save_api_key(None)  # Remove the API key
+            api_key = None  # Clear the local variable
+            st.success("API Key removed successfully!")
+    else:
+        st.write("No API Key found.")
+        new_api_key = st.text_input("Enter your News API key:", key="new_api_key_input_2")
+        if st.button("Save API Key", key="save_api_key_button_2"):
+            if new_api_key:
+                save_api_key(new_api_key)
+                st.success("API Key saved successfully!")
+                api_key = new_api_key  # Update the local variable
+            else:
+                st.warning("Please enter a valid API key.")
+
+# Modal feature
+if "modal_enabled" not in st.session_state:
+    st.session_state.modal_enabled = True
+
+# Function to close the modal
+def close_modal():
+    st.session_state.modal_enabled = False
+
+# Modal display using expander
+if st.session_state.modal_enabled:
+    with st.expander("Welcome to Next News Search!", expanded=True):
+        st.write("Use this application to find the latest news articles.")
+        st.markdown("[Get your API Key here!](https://newsapi.org/register)")
+        if st.button("Close"):
+            close_modal()
