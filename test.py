@@ -12,11 +12,6 @@ import user_database
 import secrets
 import sqlite3
 from streamlit.components.v1 import html
-import yaml  # Import the yaml library
-
-# Load config.yaml
-with open("config.yaml", "r") as f:
-    config = yaml.safe_load(f)
 
 # Database setup
 DATABASE_PATH = "news_app.db"  # Path to your SQLite database file
@@ -76,7 +71,7 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
         st.error("Failed to fetch news articles. Please check your API key and try again.")
         return None
 
-# User Authentication with SQLite Database and Cookies
+# User Authentication with SQLite Database (No Cookies)
 def user_authentication():
     st.sidebar.header("User Authentication")
 
@@ -84,9 +79,9 @@ def user_authentication():
     if 'session_id' not in st.session_state:
         st.session_state['session_id'] = secrets.token_urlsafe(512)
 
-    # Check if a cookie exists
-    if 'username' in st.cookies:
-        username = st.cookies['username']
+    # Check if the user is logged in (based on session ID)
+    if 'username' in st.session_state:
+        username = st.session_state['username']
         # Check if the session ID matches in the database
         user = user_database.get_user_by_session_id(st.session_state['session_id'])
         if user and user[0] == username:
@@ -105,11 +100,8 @@ def user_authentication():
                     # Update last activity timestamp
                     user_database.save_last_activity(st.session_state['session_id'])
                     st.session_state['is_logged_in'] = True
-                    st.session_state['username'] = username
                     st.sidebar.write(f"Logged in as: {username}")
                     if st.sidebar.button("Logout"):
-                        # Delete the cookie
-                        st.cookies.delete('username')
                         st.session_state['is_logged_in'] = False
                         st.session_state['username'] = ''
                         st.sidebar.write("Logged out successfully.")
@@ -119,7 +111,7 @@ def user_authentication():
             st.session_state['username'] = ''
             st.sidebar.write("Session expired. Please log in again.")
     else:
-        # No cookie found
+        # User is not logged in
         st.session_state['is_logged_in'] = False
         if 'username' not in st.session_state:
             st.session_state['username'] = ''
@@ -138,8 +130,6 @@ def user_authentication():
                     st.session_state['is_logged_in'] = True
                     # Save session ID in the database
                     user_database.save_session_id(st.session_state['session_id'], username)
-                    # Set the cookie
-                    st.cookies['username'] = username
                 else:
                     st.error("Invalid username or password.")
 
