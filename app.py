@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit_cookies_manager import Cookies
 from styles import get_styles
 import requests
 import json
@@ -8,11 +9,11 @@ from news_sources import NEWS_SOURCES
 from countries import COUNTRIES
 from categories import CATEGORIES
 from authors import AUTHORS
-from user_database import create_user_table, register_user, verify_user  # Import new functions
+from user_database import create_user_table, register_user, verify_user
 
 # Initialize database and create tables
 create_table()
-create_user_table()  # Create user table for user authentication
+create_user_table()
 
 # Set the page title and layout
 st.set_page_config(page_title="Next News Search", layout="wide")
@@ -32,6 +33,9 @@ LANGUAGES = {
     "zh": "Chinese",
     "ar": "Arabic"
 }
+
+# Initialize cookies manager
+cookies = Cookies()
 
 # Function to fetch news articles
 def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_date=None, page_size=19, page=1, language=None, country=None, category=None, author=None, sources=None):
@@ -58,16 +62,25 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
     response = requests.get(url)
     
     if response.status_code == 200:
-        return json.loads(response.text)
+        return response.json()
     else:
-        st.error("Failed to fetch news articles. Please check your API key and try again.")
+        st.error(f"Failed to fetch news articles. Error: {response.status_code} - {response.text}")
         return None
 
 # User Authentication
 def user_authentication():
     st.sidebar.header("User Authentication")
     
-    if 'is_logged_in' not in st.session_state or not st.session_state['is_logged_in']:
+    if 'is_logged_in' not in st.session_state:
+        st.session_state['is_logged_in'] = False  # Initialize login state
+
+    # Check for cookies to maintain login state
+    username = cookies.get('username')
+    if username:
+        st.session_state['username'] = username
+        st.session_state['is_logged_in'] = True
+
+    if not st.session_state['is_logged_in']:
         menu = ["Login", "Register"]
         choice = st.sidebar.selectbox("Select Action", menu)
 
@@ -79,6 +92,7 @@ def user_authentication():
                     st.success("Logged in successfully!")
                     st.session_state['username'] = username  # Store username in session state
                     st.session_state['is_logged_in'] = True  # Set logged-in state
+                    cookies.set('username', username, max_age=30*24*60*60)  # Store username in cookies for 30 days
                 else:
                     st.error("Invalid username or password.")
 
@@ -88,17 +102,17 @@ def user_authentication():
             if st.sidebar.button("Register"):
                 if register_user(username, password):
                     st.success("Registration completed! You can now log in.")
-                    st.session_state['redirect_to_login'] = True  # Flag to redirect to login
                 else:
                     st.error("Username already exists. Please choose a different one.")
+    else:
+        st.sidebar.write(f"Logged in as: {st.session_state['username']}")
+        if st.sidebar.button("Logout"):
+            st.session_state['is_logged_in'] = False
+            st.session_state.pop('username', None)  # Clear username on logout
+            cookies.delete('username')  # Remove username from cookies
 
 # Call the user authentication function
 user_authentication()
-
-# Redirect to login if registration was successful
-if 'redirect_to_login' in st.session_state and st.session_state['redirect_to_login']:
-    st.session_state['redirect_to_login'] = False  # Reset the flag
-    st.sidebar.selectbox("Select Action", ["Login", "Register"], index=0)  # Switch to Login
 
 # Load the API key from the database
 api_key = load_api_key()
@@ -137,7 +151,7 @@ if "show_date" not in st.session_state:
     st.session_state.show_date = False
 
 # Check if user is logged in
-if 'is_logged_in' not in st.session_state or not st.session_state['is_logged_in']:
+if not st.session_state['is_logged_in']:
     st.warning("Please log in to access the application.")
 else:
     # Search Tab
