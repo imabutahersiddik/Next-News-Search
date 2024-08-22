@@ -12,9 +12,11 @@ import user_database
 import secrets
 import sqlite3
 from streamlit.components.v1 import html
+import yaml  # Import the yaml library
 
-# Import your config.py file
-from config import config  
+# Load config.yaml
+with open("config.yaml", "r") as f:
+    config = yaml.safe_load(f)
 
 # Database setup
 DATABASE_PATH = "news_app.db"  # Path to your SQLite database file
