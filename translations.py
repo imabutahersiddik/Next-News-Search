@@ -22,6 +22,7 @@ TRANSLATIONS = {
         "save_results": "Save Results",
         "language_selection": "Language selection",
         "preferences_saved": "Preferences saved successfully!",
+        # Add any other keys needed
     },
     "es": {
         "app_title": "Búsqueda de Noticias Siguiente",
@@ -44,6 +45,7 @@ TRANSLATIONS = {
         "save_results": "Guardar resultados",
         "language_selection": "Selección de idioma",
         "preferences_saved": "¡Preferencias guardadas con éxito!",
+        # Add any other keys needed
     },
     "fr": {
         "app_title": "Recherche de Nouvelles Suivante",
@@ -66,6 +68,7 @@ TRANSLATIONS = {
         "save_results": "Sauvegarder les résultats",
         "language_selection": "Sélection de la langue",
         "preferences_saved": "Préférences enregistrées avec succès !",
+        # Add any other keys needed
     },
     "zh": {
         "app_title": "下一条新闻搜索",
@@ -88,6 +91,7 @@ TRANSLATIONS = {
         "save_results": "保存结果",
         "language_selection": "语言选择",
         "preferences_saved": "首选项成功保存！",
+        # Add any other keys needed
     },
     "ar": {
         "app_title": "بحث الأخبار التالي",
@@ -110,5 +114,6 @@ TRANSLATIONS = {
         "save_results": "حفظ النتائج",
         "language_selection": "اختيار اللغة",
         "preferences_saved": "تم حفظ التفضيلات بنجاح!",
+        # Add any other keys needed
     }
 }
