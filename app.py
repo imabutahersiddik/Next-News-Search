@@ -67,8 +67,8 @@ api_key = load_api_key()
 # Prompt for API key if not available
 if not api_key:
     st.warning("Please enter your API key to use the application.")
-    new_api_key = st.text_input("Enter your News API key:")
-    if st.button("Save API Key"):
+    new_api_key = st.text_input("Enter your News API key:", key="new_api_key_input")
+    if st.button("Save API Key", key="save_api_key_button"):
         if new_api_key:
             save_api_key(new_api_key)
             st.success("API Key saved successfully!")
@@ -165,15 +165,15 @@ with tabs[1]:
     
     # Menu options for filtering news
     menu_options = ["Recent News", "Trending News", "Breaking News", "Oldest News", "Custom Date Range"]
-    selected_menu = st.selectbox("Filter News By:", menu_options)
+    selected_menu = st.selectbox("Filter News By:", menu_options, key="filter_menu")
 
     # Date range selection
     if selected_menu == "Custom Date Range":
         col1, col2 = st.columns(2)
         with col1:
-            st.session_state.filters['from_date'] = st.date_input("From Date:", value=st.session_state.filters['from_date'])
+            st.session_state.filters['from_date'] = st.date_input("From Date:", value=st.session_state.filters['from_date'], key="from_date_input")
         with col2:
-            st.session_state.filters['to_date'] = st.date_input("To Date:", value=st.session_state.filters['to_date'])
+            st.session_state.filters['to_date'] = st.date_input("To Date:", value=st.session_state.filters['to_date'], key="to_date_input")
     else:
         st.session_state.filters['from_date'] = None
         st.session_state.filters['to_date'] = None
@@ -182,7 +182,8 @@ with tabs[1]:
     st.session_state.filters['language'] = st.selectbox(
         "Select Language:", 
         options=[""] + list(LANGUAGES.keys()), 
-        format_func=lambda x: LANGUAGES.get(x, x)  # Display readable names
+        format_func=lambda x: LANGUAGES.get(x, x),  # Display readable names
+        key="language_select"
     )
 
     # Fetch available sources from the API only if the API key is available
@@ -192,10 +193,10 @@ with tabs[1]:
     else:
         source_options = []
 
-    st.session_state.filters['sources'] = st.multiselect("Select Sources:", options=source_options)
+    st.session_state.filters['sources'] = st.multiselect("Select Sources:", options=source_options, key="source_select")
 
     # Number of articles to fetch
-    st.session_state.filters['num_articles'] = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=st.session_state.filters['num_articles'])
+    st.session_state.filters['num_articles'] = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=st.session_state.filters['num_articles'], key="num_articles_input")
 
     # Output format selection
     output_options = [
@@ -205,10 +206,10 @@ with tabs[1]:
         "Content Only",
         "Title, Description and Content"
     ]
-    st.session_state.filters['output_format'] = st.selectbox("Select Output Format:", output_options)
+    st.session_state.filters['output_format'] = st.selectbox("Select Output Format:", output_options, key="output_format_select")
 
     # Move Show Published Date checkbox to the bottom of the Filters tab
-    show_date = st.checkbox("Show Published Date", value=st.session_state.show_date)
+    show_date = st.checkbox("Show Published Date", value=st.session_state.show_date, key="show_date_checkbox")
     st.session_state.show_date = show_date
 
 # About Tab
@@ -231,9 +232,9 @@ with tabs[3]:
         st.write("Current API Key: **" + api_key + "**")
         
         # Option to update or remove the API key
-        new_api_key = st.text_input("Update API Key:", placeholder="Enter new API key here")
+        new_api_key = st.text_input("Update API Key:", placeholder="Enter new API key here", key="update_api_key_input")
         
-        if st.button("Update API Key"):
+        if st.button("Update API Key", key="update_api_key_button"):
             if new_api_key:
                 save_api_key(new_api_key)
                 st.success("API Key updated successfully!")
@@ -241,15 +242,15 @@ with tabs[3]:
             else:
                 st.warning("Please enter a valid API key.")
         
-        if st.button("Remove API Key"):
+        if st.button("Remove API Key", key="remove_api_key_button"):
             print("Attempting to remove API key...")
             save_api_key(None)  # Remove the API key
             api_key = None  # Clear the local variable
             st.success("API Key removed successfully!")
     else:
         st.write("No API Key found.")
-        new_api_key = st.text_input("Enter your News API key:")
-        if st.button("Save API Key"):
+        new_api_key = st.text_input("Enter your News API key:", key="new_api_key_input_2")
+        if st.button("Save API Key", key="save_api_key_button_2"):
             if new_api_key:
                 save_api_key(new_api_key)
                 st.success("API Key saved successfully!")
