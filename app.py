@@ -4,7 +4,9 @@ import requests
 import json
 from datetime import datetime, timedelta
 from database import create_table, save_api_key, load_api_key, save_user_preferences, load_user_preferences
-from news_sources import NEWS_SOURCES  # Import the predefined news sources
+from news_sources import NEWS_SOURCES
+from countries import COUNTRIES
+from categories import CATEGORIES
 
 # Initialize database and create table
 create_table()
@@ -29,7 +31,7 @@ LANGUAGES = {
 }
 
 # Function to fetch news articles
-def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_date=None, page_size=19, page=1, language=None, sources=None):
+def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_date=None, page_size=19, page=1, language=None, country=None, category=None, sources=None):
     url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}&sortBy={sort_by}&pageSize={page_size}&page={page}"
     
     if from_date and to_date:
@@ -37,6 +39,12 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
     
     if language:
         url += f"&language={language}"
+    
+    if country:
+        url += f"&country={country}"
+    
+    if category:
+        url += f"&category={category}"
     
     if sources:
         url += f"&sources={sources}"
@@ -74,6 +82,8 @@ tabs = st.tabs(["Search", "Filters", "About", "Settings"])
 if "filters" not in st.session_state:
     st.session_state.filters = {
         "language": "",
+        "country": "",
+        "category": "",
         "sources": [],
         "from_date": datetime.now() - timedelta(days=30),
         "to_date": datetime.now(),
@@ -97,6 +107,8 @@ with tabs[0]:
             with st.spinner("Fetching news articles..."):
                 # Use filters from session state
                 language = st.session_state.filters['language']
+                country = st.session_state.filters['country']
+                category = st.session_state.filters['category']
                 sources = st.session_state.filters['sources']
                 from_date = st.session_state.filters['from_date']
                 to_date = st.session_state.filters['to_date']
@@ -108,7 +120,7 @@ with tabs[0]:
                 
                 # Fetch articles
                 sources_str = ",".join(sources) if sources else None
-                data = fetch_news(api_key, search_word, 'relevancy', from_date_str, to_date_str, num_articles, 1, language, sources_str)
+                data = fetch_news(api_key, search_word, 'relevancy', from_date_str, to_date_str, num_articles, 1, language, country, category, sources_str)
                 
             # Check if data is not None and contains 'articles'
             if data and 'articles' in data:
@@ -169,12 +181,25 @@ with tabs[1]:
         st.session_state.filters['from_date'] = None
         st.session_state.filters['to_date'] = None
 
-    # Advanced filters for language and sources
+    # Advanced filters for language, country, category, and sources
     st.session_state.filters['language'] = st.selectbox(
         "Select Language:", 
         options=[""] + list(LANGUAGES.keys()), 
         format_func=lambda x: LANGUAGES.get(x, x),  # Display readable names
         key="language_select"
+    )
+
+    st.session_state.filters['country'] = st.selectbox(
+        "Select Country:",
+        options=[""] + list(COUNTRIES.keys()),
+        format_func=lambda x: COUNTRIES.get(x, x),  # Display readable country names
+        key="country_select"
+    )
+
+    st.session_state.filters['category'] = st.selectbox(
+        "Select Category:",
+        options=[""] + CATEGORIES,
+        key="category_select"
     )
 
     # Use predefined sources from news_sources.py
