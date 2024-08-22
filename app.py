@@ -78,7 +78,7 @@ with tabs[0]:
     search_word = st.text_input("", placeholder="Search the news...", key="search_input")
     
     # Button to fetch news (icon on right)
-    if st.button("🔍", key="search_button"):
+    if st.button("Search", key="search_button"):
         if api_key and search_word:
             with st.spinner("Fetching news articles..."):
                 # Use filters from session state
