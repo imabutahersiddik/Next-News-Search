@@ -32,8 +32,11 @@ def save_api_key(api_key):
     cursor = conn.cursor()
     
     try:
-        cursor.execute('DELETE FROM api_key')  # Clear existing API key
-        cursor.execute('INSERT INTO api_key (key) VALUES (?)', (api_key,))
+        if api_key is None:
+            cursor.execute('DELETE FROM api_key')  # Clear existing API key
+        else:
+            cursor.execute('DELETE FROM api_key')  # Clear existing API key
+            cursor.execute('INSERT INTO api_key (key) VALUES (?)', (api_key,))
         conn.commit()
     except sqlite3.Error as e:
         print(f"An error occurred while saving the API key: {e}")
