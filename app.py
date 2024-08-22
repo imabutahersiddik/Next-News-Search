@@ -33,6 +33,36 @@ LANGUAGES = {
     "ar": "Arabic"
 }
 
+# Function to fetch news articles
+def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_date=None, page_size=19, page=1, language=None, country=None, category=None, author=None, sources=None):
+    url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}&sortBy={sort_by}&pageSize={page_size}&page={page}"
+    
+    if from_date and to_date:
+        url += f"&from={from_date}&to={to_date}"
+    
+    if language:
+        url += f"&language={language}"
+    
+    if country:
+        url += f"&country={country}"
+    
+    if category:
+        url += f"&category={category}"
+    
+    if author:
+        url += f"&author={author}"
+    
+    if sources:
+        url += f"&sources={','.join(sources)}"
+    
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        return json.loads(response.text)
+    else:
+        st.error("Failed to fetch news articles. Please check your API key and try again.")
+        return None
+
 # User Authentication
 def user_authentication():
     st.sidebar.header("User Authentication")
