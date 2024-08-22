@@ -16,6 +16,17 @@ st.markdown(get_styles(), unsafe_allow_html=True)
 # Add meta description
 st.markdown('<meta name="description" content="Next News Search is a user-friendly application that allows you to search for the latest news articles using the News API. Enter your keywords and API key to fetch relevant news articles effortlessly." />', unsafe_allow_html=True)
 
+# Static list of languages with readable names
+LANGUAGES = {
+    "en": "English",
+    "fr": "French",
+    "es": "Spanish",
+    "de": "German",
+    "it": "Italian",
+    "zh": "Chinese",
+    "ar": "Arabic"
+}
+
 # Function to fetch news articles
 def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_date=None, page_size=19, page=1, language=None, sources=None):
     url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}&sortBy={sort_by}&pageSize={page_size}&page={page}"
@@ -52,6 +63,18 @@ st.markdown("<h1 style='text-align: center;'>Next News Search</h1>", unsafe_allo
 
 # Load the API key from the database
 api_key = load_api_key()
+
+# Prompt for API key if not available
+if not api_key:
+    st.warning("Please enter your API key to use the application.")
+    new_api_key = st.text_input("Enter your News API key:")
+    if st.button("Save API Key"):
+        if new_api_key:
+            save_api_key(new_api_key)
+            st.success("API Key saved successfully!")
+            api_key = new_api_key  # Update the local variable
+        else:
+            st.warning("Please enter a valid API key.")
 
 # Create tabs for Search, Filters, About, and Settings
 tabs = st.tabs(["Search", "Filters", "About", "Settings"])
@@ -156,9 +179,13 @@ with tabs[1]:
         st.session_state.filters['to_date'] = None
 
     # Advanced filters for language and sources
-    st.session_state.filters['language'] = st.selectbox("Select Language:", options=["", "en", "es", "fr", "de", "it", "zh", "ar"], index=0)
+    st.session_state.filters['language'] = st.selectbox(
+        "Select Language:", 
+        options=[""] + list(LANGUAGES.keys()), 
+        format_func=lambda x: LANGUAGES.get(x, x)  # Display readable names
+    )
 
-    # Fetch available sources from the API
+    # Fetch available sources from the API only if the API key is available
     if api_key:
         sources_list = fetch_sources(api_key)
         source_options = [source['id'] for source in sources_list]
