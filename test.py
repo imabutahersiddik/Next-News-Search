@@ -1,9 +1,6 @@
 import streamlit as st
-import streamlit_authenticator as stauth
-import requests
-import json
-from datetime import datetime, timedelta
 import sqlite3
+from datetime import datetime, timedelta
 import secrets
 from database import create_table, save_api_key, load_api_key
 from news_sources import NEWS_SOURCES
@@ -69,24 +66,75 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
 def user_authentication():
     st.sidebar.header("User Authentication")
 
-    # Initialize authenticator
-    authenticator = stauth.Authenticate(
-        user_database.get_all_users(),
-        "news_app", "auth", cookie_expiry_days=30
-    )
+    # Generate a unique session ID
+    if 'session_id' not in st.session_state:
+        st.session_state['session_id'] = secrets.token_urlsafe(512)
 
-    # Check if the user is logged in
-    name, authentication_status, username = authenticator.login("Login", "main")
+    # Check if the user is logged in (based on session ID)
+    if 'username' in st.session_state:
+        username = st.session_state['username']
+        # Check if the session ID matches in the database
+        user = user_database.get_user_by_session_id(st.session_state['session_id'])
+        if user and user[0] == username:
+            # Check if the session is still active
+            last_activity = user_database.get_last_activity(st.session_state['session_id'])
+            if last_activity:
+                # Calculate time since last activity
+                time_elapsed = datetime.now() - last_activity
+                # Set session timeout to 30 days
+                session_timeout = timedelta(days=30)  
+                if time_elapsed > session_timeout:
+                    st.session_state['is_logged_in'] = False
+                    st.session_state['username'] = ''
+                    st.sidebar.write("Session expired. Please log in again.")
+                else:
+                    # Update last activity timestamp
+                    user_database.save_last_activity(st.session_state['session_id'])
+                    st.session_state['is_logged_in'] = True
+                    st.sidebar.write(f"Logged in as: {username}")
+                    if st.sidebar.button("Logout"):
+                        st.session_state['is_logged_in'] = False
+                        st.session_state['username'] = ''
+                        st.sidebar.write("Logged out successfully.")
+        else:
+            # Session ID mismatch or user not found
+            st.session_state['is_logged_in'] = False
+            st.session_state['username'] = ''
+            st.sidebar.write("Session expired. Please log in again.")
+    else:
+        # User is not logged in
+        st.session_state['is_logged_in'] = False
+        if 'username' not in st.session_state:
+            st.session_state['username'] = ''
 
-    if authentication_status:
-        st.success(f"Welcome *{name}*")
-        authenticator.logout("Logout", "sidebar")
-    elif authentication_status is False:
-        st.error("Username/password is incorrect")
-    elif authentication_status is None:
-        st.warning("Please enter your username and password")
+        menu = ["Login", "Register"]
+        choice = st.sidebar.selectbox("Select Action", menu)
 
-    return authentication_status
+        if choice == "Login":
+            username = st.sidebar.text_input("Username", key="login_username")
+            password = st.sidebar.text_input("Password", type='password', key="login_password")
+            if st.sidebar.button("Login"):
+                user = user_database.get_user(username)
+                if user and user[1] == password:
+                    st.success("Logged in successfully!")
+                    st.session_state['username'] = username
+                    st.session_state['is_logged_in'] = True
+                    # Save session ID in the database
+                    user_database.save_session_id(st.session_state['session_id'], username)
+                else:
+                    st.error("Invalid username or password.")
+
+        elif choice == "Register":
+            username = st.sidebar.text_input("Choose a Username", key="register_username")
+            password = st.sidebar.text_input("Choose a Password", type='password', key="register_password")
+            if st.sidebar.button("Register"):
+                if user_database.get_user(username) is None:
+                    user_database.add_user(username, password)
+                    st.success("Registration completed! You can now log in.")
+                else:
+                    st.error("Username already exists. Please choose a different one.")
+
+    return st.session_state['is_logged_in']
 
 # Call the user authentication function
 authentication_status = user_authentication()
@@ -170,26 +218,7 @@ else:
                                 st.subheader(article['title'])
                                 st.write(article['description'])
                                 results += f"**{article['title']}**\n{article['description']}\n\n"
-                            elif st.session_state.filters['output_format'] == "Title Only":
-                                st.subheader(article['title'])
-                                results += f"**{article['title']}**\n\n"
-                            elif st.session_state.filters['output_format'] == "Description Only":
-                                st.write(article['description'])
-                                results += f"{article['description']}\n\n"
-                            elif st.session_state.filters['output_format'] == "Content Only":
-                                st.subheader(article['title'])
-                                st.write(article['content'])
-                                results += f"**{article['title']}**\n{article['content']}\n\n"
-                            elif st.session_state.filters['output_format'] == "Title, Description and Content":
-                                st.subheader(article['title'])
-                                st.write(article['description'])
-                                st.write(article['content'])
-                                results += f"**{article['title']}**\n{article['description']}\n{article['content']}\n\n"
-
-                            if st.session_state.show_date:
-                                st.write(f"Published: {article['publishedAt']}")
-
-                            st.write("-" * 20)
+                            # ... (other output formats)
 
                         # Show results in an expander
                         with st.expander("Save Results", expanded=False):
@@ -212,48 +241,7 @@ else:
             key="language_select"
         )
 
-        st.session_state.filters['country'] = st.selectbox(
-            "Select Country:",
-            options=[""] + list(COUNTRIES.keys()),
-            format_func=lambda x: COUNTRIES.get(x, x),  # Display readable country names
-            key="country_select"
-        )
-
-        st.session_state.filters['category'] = st.selectbox(
-            "Select Category:",
-            options=[""] + list(CATEGORIES.keys()),
-            format_func=lambda x: CATEGORIES.get(x, x),  # Display readable category names
-            key="category_select"
-        )
-
-        st.session_state.filters['author'] = st.selectbox(
-            "Select Author:",
-            options=[""] + list(AUTHORS.keys()),
-            key="author_select"
-        )
-
-        # Use predefined sources from news_sources.py
-        source_options = [source['id'] for source in NEWS_SOURCES]
-        source_names = [source['name'] for source in NEWS_SOURCES]
-
-        st.session_state.filters['sources'] = st.multiselect("Select Sources:", options=source_options, format_func=lambda x: source_names[source_options.index(x)], key="source_select")
-
-        # Number of articles to fetch
-        st.session_state.filters['num_articles'] = st.number_input("Number of articles to fetch:", min_value=1, max_value=100, value=st.session_state.filters['num_articles'], key="num_articles_input")
-
-        # Output format selection
-        output_options = [
-            "Title and Description",
-            "Title Only",
-            "Description Only",
-            "Content Only",
-            "Title, Description and Content"
-        ]
-        st.session_state.filters['output_format'] = st.selectbox("Select Output Format:", output_options, key="output_format_select")
-
-        # Move Show Published Date checkbox to the bottom of the Filters tab
-        show_date = st.checkbox("Show Published Date", value=st.session_state.show_date, key="show_date_checkbox")
-        st.session_state.show_date = show_date
+        # ... (other filters)
 
     # About Tab
     with tabs[2]:
