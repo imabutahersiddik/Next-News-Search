@@ -11,6 +11,12 @@ from authors import AUTHORS
 from user_database import create_user_table, create_session_table, register_user, verify_user, get_user_by_session_id, save_session_id
 import secrets
 import sqlite3
+import yaml
+from streamlit.components.v1 import html
+
+# Load configuration from YAML file
+with open("config.yaml", "r") as f:
+    config = yaml.safe_load(f)
 
 # Database setup
 DATABASE_PATH = "news_app.db"  # Path to your SQLite database file
@@ -20,7 +26,7 @@ cursor = conn.cursor()
 # Initialize database and create tables
 create_table()
 create_user_table()
-create_session_table() # Add this line to create the sessions table
+create_session_table()
 
 # Set the page title and layout
 st.set_page_config(page_title="Next News Search", layout="wide")
@@ -71,7 +77,7 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
         st.error("Failed to fetch news articles. Please check your API key and try again.")
         return None
 
-# User Authentication with SQLite Database
+# User Authentication with SQLite Database and Cookies
 def user_authentication():
     st.sidebar.header("User Authentication")
 
@@ -79,18 +85,18 @@ def user_authentication():
     if 'session_id' not in st.session_state:
         st.session_state['session_id'] = secrets.token_urlsafe(32)
 
-    # Load session from database
-    user = get_user_by_session_id(st.session_state['session_id'])
-
-    if user:
+    # Check if a cookie exists
+    if 'username' in st.cookies:
+        username = st.cookies['username']
         st.session_state['is_logged_in'] = True
-        st.session_state['username'] = user[0]
-        st.sidebar.write(f"Logged in as: {user[0]}")
+        st.session_state['username'] = username
+        st.sidebar.write(f"Logged in as: {username}")
         if st.sidebar.button("Logout"):
-            cursor.execute("DELETE FROM sessions WHERE session_id=?", (st.session_state['session_id'],))
-            conn.commit()
+            # Delete the cookie
+            st.cookies.delete('username')
             st.session_state['is_logged_in'] = False
             st.session_state['username'] = ''
+            st.sidebar.write("Logged out successfully.")
     else:
         st.session_state['is_logged_in'] = False  # Initialize login state
         if 'username' not in st.session_state:
@@ -109,6 +115,8 @@ def user_authentication():
                     st.session_state['is_logged_in'] = True
                     # Save session ID in the database
                     save_session_id(st.session_state['session_id'], username)
+                    # Set the cookie
+                    st.cookies['username'] = username
                 else:
                     st.error("Invalid username or password.")
 
