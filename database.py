@@ -1,31 +1,15 @@
 import sqlite3
-import hashlib
 
 # Function to create a database and tables
 def create_table():
     conn = sqlite3.connect('news_search.db')
     cursor = conn.cursor()
     
-    # Create table for storing users
+    # Create table for storing API key
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
+        CREATE TABLE IF NOT EXISTS api_key (
             id INTEGER PRIMARY KEY,
-            username TEXT UNIQUE NOT NULL,
-            full_name TEXT,
-            country TEXT,
-            email TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            role TEXT DEFAULT 'free'
-        )
-    ''')
-    
-    # Create table for storing API keys
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS api_keys (
-            id INTEGER PRIMARY KEY,
-            user_id INTEGER,
-            key TEXT NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users(id)
+            key TEXT NOT NULL
         )
     ''')
     
@@ -33,133 +17,83 @@ def create_table():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS user_preferences (
             id INTEGER PRIMARY KEY,
-            user_id INTEGER,
             language TEXT,
             sources TEXT,
-            output_format TEXT,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-    ''')
-    
-    # Create table for storing searches
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS searches (
-            id INTEGER PRIMARY KEY,
-            user_id INTEGER,
-            keyword TEXT,
-            api_key TEXT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id)
+            output_format TEXT
         )
     ''')
     
     conn.commit()
     conn.close()
 
-# Function to hash passwords
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-# Function to register a user
-def register_user(username, full_name, country, email, password):
+# Function to save API key
+def save_api_key(api_key):
     conn = sqlite3.connect('news_search.db')
     cursor = conn.cursor()
+    
     try:
-        cursor.execute('''
-            INSERT INTO users (username, full_name, country, email, password)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (username, full_name, country, email, hash_password(password)))
+        if api_key is None:
+            cursor.execute('DELETE FROM api_key')  # Clear existing API key
+        else:
+            cursor.execute('DELETE FROM api_key')  # Clear existing API key
+            cursor.execute('INSERT INTO api_key (key) VALUES (?)', (api_key,))
         conn.commit()
-    except sqlite3.IntegrityError:
-        print("Username or email already exists.")
+    except sqlite3.Error as e:
+        print(f"An error occurred while saving the API key: {e}")
     finally:
         conn.close()
 
-# Function to login a user
-def login_user(username, password):
-    conn = sqlite3.connect('news_search.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT password FROM users WHERE username = ?', (username,))
-    result = cursor.fetchone()
-    conn.close()
-    
-    if result and result[0] == hash_password(password):
-        return True
-    return False
-
-# Function to save API key
-def save_api_key(username, api_key):
+# Function to load API key
+def load_api_key():
     conn = sqlite3.connect('news_search.db')
     cursor = conn.cursor()
     
-    cursor.execute('SELECT id FROM users WHERE username = ?', (username,))
-    user_id = cursor.fetchone()
-    
-    if user_id:
-        cursor.execute('DELETE FROM api_keys WHERE user_id = ?', (user_id[0],))  # Clear existing API keys
-        cursor.execute('INSERT INTO api_keys (user_id, key) VALUES (?, ?)', (user_id[0], api_key))
-        conn.commit()
-    conn.close()
-
-# Function to load API keys for a user
-def load_api_keys(username):
-    conn = sqlite3.connect('news_search.db')
-    cursor = conn.cursor()
-    
-    cursor.execute('SELECT id FROM users WHERE username = ?', (username,))
-    user_id = cursor.fetchone()
-    
-    if user_id:
-        cursor.execute('SELECT key FROM api_keys WHERE user_id = ?', (user_id[0],))
-        results = cursor.fetchall()
-        return [row[0] for row in results]
-    
-    conn.close()
-    return []
-
-# Function to load a single API key for a user (if needed)
-def load_api_key(username):
-    conn = sqlite3.connect('news_search.db')
-    cursor = conn.cursor()
-    
-    cursor.execute('SELECT id FROM users WHERE username = ?', (username,))
-    user_id = cursor.fetchone()
-    
-    if user_id:
-        cursor.execute('SELECT key FROM api_keys WHERE user_id = ?', (user_id[0],))
+    try:
+        cursor.execute('SELECT key FROM api_key')
         result = cursor.fetchone()
         return result[0] if result else None
-    
-    conn.close()
-    return None
+    except sqlite3.Error as e:
+        print(f"An error occurred while loading the API key: {e}")
+        return None
+    finally:
+        conn.close()
 
 # Function to save user preferences
-def save_user_preferences(username, preferences):
+def save_user_preferences(preferences):
     conn = sqlite3.connect('news_search.db')
     cursor = conn.cursor()
     
-    cursor.execute('SELECT id FROM users WHERE username = ?', (username,))
-    user_id = cursor.fetchone()
-    
-    if user_id:
-        cursor.execute('''
-            INSERT OR REPLACE INTO user_preferences (user_id, language, sources, output_format)
-            VALUES (?, ?, ?, ?)
-        ''', (user_id[0], preferences['language'], ','.join(preferences['sources']), preferences['output_format']))
+    try:
+        # Check if there are any existing preferences
+        cursor.execute('SELECT COUNT(*) FROM user_preferences')
+        existing_preferences = cursor.fetchone()[0]
+        
+        if existing_preferences > 0:
+            # Update existing preferences
+            cursor.execute('''
+                UPDATE user_preferences
+                SET language = ?, sources = ?, output_format = ?
+            ''', (preferences['language'], ','.join(preferences['sources']), preferences['output_format']))
+        else:
+            # Insert new preferences
+            cursor.execute('''
+                INSERT INTO user_preferences (language, sources, output_format)
+                VALUES (?, ?, ?)
+            ''', (preferences['language'], ','.join(preferences['sources']), preferences['output_format']))
+        
         conn.commit()
-    
-    conn.close()
+    except sqlite3.Error as e:
+        print(f"An error occurred while saving user preferences: {e}")
+    finally:
+        conn.close()
 
 # Function to load user preferences
-def load_user_preferences(username):
+def load_user_preferences():
     conn = sqlite3.connect('news_search.db')
     cursor = conn.cursor()
     
-    cursor.execute('SELECT id FROM users WHERE username = ?', (username,))
-    user_id = cursor.fetchone()
-    
-    if user_id:
-        cursor.execute('SELECT language, sources, output_format FROM user_preferences WHERE user_id = ?', (user_id[0],))
+    try:
+        cursor.execute('SELECT language, sources, output_format FROM user_preferences')
         result = cursor.fetchone()
         
         if result:
@@ -168,20 +102,17 @@ def load_user_preferences(username):
                 'sources': result[1].split(',') if result[1] else [],
                 'output_format': result[2]
             }
-    
-    return {
-        'language': None,
-        'sources': [],
-        'output_format': None
-    }
-
-# Function to save search details
-def save_search(user_id, keyword, api_key):
-    conn = sqlite3.connect('news_search.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO searches (user_id, keyword, api_key)
-        VALUES (?, ?, ?)
-    ''', (user_id, keyword, api_key))
-    conn.commit()
-    conn.close()
+        return {
+            'language': None,
+            'sources': [],
+            'output_format': None
+        }  # Return default values if no preferences are found
+    except sqlite3.Error as e:
+        print(f"An error occurred while loading user preferences: {e}")
+        return {
+            'language': None,
+            'sources': [],
+            'output_format': None
+        }
+    finally:
+        conn.close()
