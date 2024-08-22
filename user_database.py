@@ -16,6 +16,18 @@ def create_user_table():
     conn.commit()
     conn.close()
 
+def create_session_table():
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sessions (
+            session_id TEXT PRIMARY KEY,
+            username TEXT
+        )
+    """)
+    conn.commit()
+    conn.close()
+
 def register_user(username, password):
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
@@ -47,7 +59,6 @@ def get_user_by_session_id(session_id):
 def save_session_id(session_id, username):
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS sessions (session_id TEXT PRIMARY KEY, username TEXT)")
     cursor.execute("INSERT OR REPLACE INTO sessions VALUES (?, ?)", (session_id, username))
     conn.commit()
     conn.close()
