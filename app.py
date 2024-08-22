@@ -20,10 +20,20 @@ st.markdown(f'<meta name="description" content="{TRANSLATIONS["en"]["app_title"]
 # Load the API key from the database
 api_key = load_api_key()
 
-# Initialize session state for filters and language if not already done
-if "filters" not in st.session_state:
+# Load user preferences from the database
+user_preferences = load_user_preferences()
+if user_preferences:
     st.session_state.filters = {
-        "language": "",
+        "language": user_preferences['language'],
+        "sources": user_preferences['sources'],
+        "from_date": datetime.now() - timedelta(days=30),
+        "to_date": datetime.now(),
+        "num_articles": 19,
+        "output_format": user_preferences['output_format'] or "Title and Description"  # Default if None
+    }
+else:
+    st.session_state.filters = {
+        "language": None,
         "sources": [],
         "from_date": datetime.now() - timedelta(days=30),
         "to_date": datetime.now(),
@@ -31,6 +41,7 @@ if "filters" not in st.session_state:
         "output_format": "Title and Description"  # Default output format
     }
 
+# Initialize session state for language if not already done
 if "selected_language" not in st.session_state:
     st.session_state.selected_language = "en"  # Default language
 
@@ -127,7 +138,7 @@ with tabs[0]:
                     st.text_area(TRANSLATIONS[st.session_state.selected_language]["copy_results"], value=results, height=300)
 
             else:
-                st.warning(TRANSLATIONS[st.session_state.selected_language]["no_articles_found"])
+                st.error(TRANSLATIONS[st.session_state.selected_language]["no_articles_found"])
         else:
             st.warning(TRANSLATIONS[st.session_state.selected_language]["please_enter_valid_api_key"])
 
