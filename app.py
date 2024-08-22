@@ -188,7 +188,7 @@ with tabs[1]:
         TRANSLATIONS[st.session_state.selected_language]["content_only"],
         TRANSLATIONS[st.session_state.selected_language]["title_description_content"]
     ]
-    st.session_state.filters['output_format'] = st.selectbox(TRANSLATIONS[st.session_state.selected_language]["select_output_format"], output_options)
+    st.session_state.filters['output_format'] = st.selectbox(TRANSLATIONS[st.session_state.selected_language]["output_format"], output_options)
 
     # Move Show Published Date checkbox to the bottom of the Filters tab
     show_date = st.checkbox(TRANSLATIONS[st.session_state.selected_language]["show_published_date"], value=st.session_state.show_date)
