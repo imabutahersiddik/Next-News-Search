@@ -41,17 +41,14 @@ else:
         "output_format": "Title and Description"  # Default output format
     }
 
-# Initialize session state for language if not already done
+# Initialize session state for language and show_date if not already done
 if "selected_language" not in st.session_state:
     st.session_state.selected_language = "en"  # Default language
 
-# Language selection
-selected_language = st.selectbox(
-    TRANSLATIONS[st.session_state.selected_language]["select_language"],
-    options=list(TRANSLATIONS.keys()),
-    format_func=lambda x: TRANSLATIONS[x]["select_language"]
-)
-st.session_state.selected_language = selected_language  # Save selected language in session state
+if "show_date" not in st.session_state:
+    st.session_state.show_date = False  # Default value for show_date
+
+# Language selection moved to the Settings Tab
 
 # Streamlit app layout
 st.markdown(f"<h1 style='text-align: center;'>{TRANSLATIONS[st.session_state.selected_language]['app_title']}</h1>", unsafe_allow_html=True)
@@ -166,7 +163,7 @@ with tabs[1]:
         st.session_state.filters['to_date'] = None
 
     # Advanced filters for language and sources
-    st.session_state.filters['language'] = st.selectbox(TRANSLATIONS[st.session_state.selected_language]["select_language"], options=["", "en", "es", "fr", "de", "it", "zh", "ja", "ko", "hi", "ur", "ar", "bn", "ru"], index=0)
+    # Language selection moved to the Settings Tab
 
     # Fetch available sources from the API
     if api_key:
@@ -234,6 +231,14 @@ with tabs[3]:
                 api_key = new_api_key  # Update the local variable
             else:
                 st.warning(TRANSLATIONS[st.session_state.selected_language]["please_enter_valid_api_key"])
+
+    # Language selection moved to the settings tab
+    selected_language = st.selectbox(
+        TRANSLATIONS[st.session_state.selected_language]["select_language"],
+        options=list(TRANSLATIONS.keys()),
+        format_func=lambda x: TRANSLATIONS[x]["select_language"]
+    )
+    st.session_state.selected_language = selected_language  # Save selected language in session state
 
 # Modal feature
 if "modal_enabled" not in st.session_state:
