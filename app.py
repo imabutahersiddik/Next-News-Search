@@ -46,6 +46,7 @@ def user_authentication():
             if verify_user(username, password):
                 st.success("Logged in successfully!")
                 st.session_state['username'] = username  # Store username in session state
+                st.session_state['is_logged_in'] = True  # Set logged-in state
             else:
                 st.error("Invalid username or password.")
 
@@ -54,15 +55,21 @@ def user_authentication():
         password = st.sidebar.text_input("Choose a Password", type='password')
         if st.sidebar.button("Register"):
             if register_user(username, password):
-                st.success("Registered successfully! You can now log in.")
+                st.success("Registration completed! You can now log in.")
+                st.session_state['redirect_to_login'] = True  # Flag to redirect to login
             else:
                 st.error("Username already exists. Please choose a different one.")
 
 # Call the user authentication function
 user_authentication()
 
+# Redirect to login if registration was successful
+if 'redirect_to_login' in st.session_state and st.session_state['redirect_to_login']:
+    st.session_state['redirect_to_login'] = False  # Reset the flag
+    st.sidebar.selectbox("Select Action", ["Login", "Register"], index=0)  # Switch to Login
+
 # Check if user is logged in
-if 'username' not in st.session_state:
+if 'is_logged_in' not in st.session_state or not st.session_state['is_logged_in']:
     st.warning("Please log in to access the application.")
 else:
     # The rest of your application code goes here
