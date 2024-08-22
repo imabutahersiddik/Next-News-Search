@@ -9,6 +9,8 @@ from countries import COUNTRIES
 from categories import CATEGORIES
 from authors import AUTHORS
 from user_database import create_user_table, register_user, verify_user
+import secrets
+from streamlit.components.v1 import html
 
 # Initialize database and create tables
 create_table()
@@ -63,17 +65,29 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
         st.error("Failed to fetch news articles. Please check your API key and try again.")
         return None
 
-# User Authentication
+# User Authentication with Cookie-based Session Management
 def user_authentication():
     st.sidebar.header("User Authentication")
-    
-    if 'is_logged_in' not in st.session_state:
-        st.session_state['is_logged_in'] = False  # Initialize login state
-    
-    if 'username' not in st.session_state:
-        st.session_state['username'] = ''  # Initialize username
 
-    if not st.session_state['is_logged_in']:
+    # Generate a unique session ID (replace with a more robust method if needed)
+    if 'session_id' not in st.session_state:
+        st.session_state['session_id'] = secrets.token_urlsafe(32)
+
+    # Check for existing cookie
+    if 'user' in st.cookies:
+        user = st.cookies['user']
+        st.session_state['is_logged_in'] = True
+        st.session_state['username'] = user
+        st.sidebar.write(f"Logged in as: {user}")
+        if st.sidebar.button("Logout"):
+            st.cookies.delete('user')
+            st.session_state['is_logged_in'] = False
+            st.session_state['username'] = ''
+    else:
+        st.session_state['is_logged_in'] = False  # Initialize login state
+        if 'username' not in st.session_state:
+            st.session_state['username'] = ''  # Initialize username
+
         menu = ["Login", "Register"]
         choice = st.sidebar.selectbox("Select Action", menu)
 
@@ -83,8 +97,10 @@ def user_authentication():
             if st.sidebar.button("Login"):
                 if verify_user(username, password):
                     st.success("Logged in successfully!")
-                    st.session_state['username'] = username  # Store username in session state
-                    st.session_state['is_logged_in'] = True  # Set logged-in state
+                    st.session_state['username'] = username
+                    st.session_state['is_logged_in'] = True
+                    # Set cookie for session management
+                    st.cookies['user'] = username
                 else:
                     st.error("Invalid username or password.")
 
@@ -96,11 +112,6 @@ def user_authentication():
                     st.success("Registration completed! You can now log in.")
                 else:
                     st.error("Username already exists. Please choose a different one.")
-    else:
-        st.sidebar.write(f"Logged in as: {st.session_state['username']}")
-        if st.sidebar.button("Logout"):
-            st.session_state['is_logged_in'] = False
-            st.session_state['username'] = ''  # Clear username on logout
 
 # Call the user authentication function
 user_authentication()
