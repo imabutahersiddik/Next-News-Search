@@ -90,4 +90,8 @@ def load_user_preferences():
             'sources': result[1].split(',') if result[1] else [],
             'output_format': result[2]
         }
-    return None
+    return {
+        'language': None,
+        'sources': [],
+        'output_format': None
+    }  # Return default values if no preferences are found
