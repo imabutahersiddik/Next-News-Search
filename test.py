@@ -8,9 +8,14 @@ from news_sources import NEWS_SOURCES
 from countries import COUNTRIES
 from categories import CATEGORIES
 from authors import AUTHORS
-from user_database import create_user_table, register_user, verify_user
+from user_database import create_user_table, register_user, verify_user, get_user_by_session_id, save_session_id
 import secrets
-from streamlit.components.v1 import html
+import sqlite3
+
+# Database setup
+DATABASE_PATH = "news_app.db"  # Path to your SQLite database file
+conn = sqlite3.connect(DATABASE_PATH)
+cursor = conn.cursor()
 
 # Initialize database and create tables
 create_table()
@@ -65,22 +70,24 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
         st.error("Failed to fetch news articles. Please check your API key and try again.")
         return None
 
-# User Authentication with Cookie-based Session Management
+# User Authentication with SQLite Database
 def user_authentication():
     st.sidebar.header("User Authentication")
 
-    # Generate a unique session ID (replace with a more robust method if needed)
+    # Generate a unique session ID
     if 'session_id' not in st.session_state:
         st.session_state['session_id'] = secrets.token_urlsafe(32)
 
-    # Check for existing cookie
-    if 'user' in st.cookies:
-        user = st.cookies['user']
+    # Load session from database
+    user = get_user_by_session_id(st.session_state['session_id'])
+
+    if user:
         st.session_state['is_logged_in'] = True
-        st.session_state['username'] = user
-        st.sidebar.write(f"Logged in as: {user}")
+        st.session_state['username'] = user[0]
+        st.sidebar.write(f"Logged in as: {user[0]}")
         if st.sidebar.button("Logout"):
-            st.cookies.delete('user')
+            cursor.execute("DELETE FROM sessions WHERE session_id=?", (st.session_state['session_id'],))
+            conn.commit()
             st.session_state['is_logged_in'] = False
             st.session_state['username'] = ''
     else:
@@ -99,8 +106,8 @@ def user_authentication():
                     st.success("Logged in successfully!")
                     st.session_state['username'] = username
                     st.session_state['is_logged_in'] = True
-                    # Set cookie for session management
-                    st.cookies['user'] = username
+                    # Save session ID in the database
+                    save_session_id(st.session_state['session_id'], username)
                 else:
                     st.error("Invalid username or password.")
 
@@ -355,3 +362,6 @@ else:
             st.markdown("[Get your API Key here!](https://newsapi.org/register)")
             if st.button("Close"):
                 close_modal()
+
+# Close the database connection
+conn.close()
