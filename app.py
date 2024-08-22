@@ -42,16 +42,16 @@ def fetch_news(api_key, search_word, sort_by='relevancy', from_date=None, to_dat
         url += f"&language={language}"
     
     if country:
-        url += f"&country={country}"
+        url += f"&country={COUNTRIES.get(country, country)}"  # Use the country code from the COUNTRIES dictionary
     
     if category:
-        url += f"&category={category}"
+        url += f"&category={CATEGORIES.get(category, category)}"  # Use the category name from the CATEGORIES dictionary
     
     if author:
         url += f"&author={author}"
     
     if sources:
-        url += f"&sources={sources}"
+        url += f"&sources={','.join(sources)}"
     
     response = requests.get(url)
     
