@@ -7,7 +7,7 @@ from database import create_table, save_api_key, load_api_key, save_user_prefere
 from news_sources import NEWS_SOURCES
 from countries import COUNTRIES
 from categories import CATEGORIES
-from authors import AUTHORS  # Import the AUTHORS dictionary
+from authors import AUTHORS
 
 # Initialize database and create table
 create_table()
@@ -126,45 +126,57 @@ with tabs[0]:
                 
                 # Fetch articles
                 sources_str = ",".join(sources) if sources else None
-                data = fetch_news(api_key, search_word, 'relevancy', from_date_str, to_date_str, num_articles, 1, language, country, category, author, sources_str)
                 
-            # Check if data is not None and contains 'articles'
-            if data and 'articles' in data:
-                articles = data['articles']
-                results = ""
-
-                for article in articles:
-                    if st.session_state.filters['output_format'] == "Title and Description":
-                        st.subheader(article['title'])
-                        st.write(article['description'])
-                        results += f"**{article['title']}**\n{article['description']}\n\n"
-                    elif st.session_state.filters['output_format'] == "Title Only":
-                        st.subheader(article['title'])
-                        results += f"**{article['title']}**\n\n"
-                    elif st.session_state.filters['output_format'] == "Description Only":
-                        st.write(article['description'])
-                        results += f"{article['description']}\n\n"
-                    elif st.session_state.filters['output_format'] == "Content Only":
-                        st.subheader(article['title'])
-                        st.write(article['content'])
-                        results += f"**{article['title']}**\n{article['content']}\n\n"
-                    elif st.session_state.filters['output_format'] == "Title, Description and Content":
-                        st.subheader(article['title'])
-                        st.write(article['description'])
-                        st.write(article['content'])
-                        results += f"**{article['title']}**\n{article['description']}\n{article['content']}\n\n"
-
-                    if st.session_state.show_date:
-                        st.write(f"Published: {article['publishedAt']}")
-
-                    st.write("-" * 20)
-
-                # Show results in an expander
-                with st.expander("Save Results", expanded=False):
-                    st.text_area("Copy Results", value=results, height=300)
-
-            else:
-                st.warning("No articles found for your search query or an error occurred.")
+                # Construct the API request URL based on selected filters
+                url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}&sortBy=relevancy&pageSize={num_articles}&page=1"
+                
+                if language:
+                    url += f"&language={language}"
+                
+                if country:
+                    url += f"&country={country}"
+                
+                if category:
+                    url += f"&category={category}"
+                
+                if author:
+                    url += f"&author={author}"
+                
+                if sources:
+                    url += f"&sources={sources_str}"
+                
+                if from_date_str and to_date_str:
+                    url += f"&from={from_date_str}&to={to_date_str}"
+                
+                response = requests.get(url)
+                
+                if response.status_code == 200:
+                    data = json.loads(response.text)
+                    articles = data['articles']
+                    
+                    # Display articles based on the selected output format
+                    for article in articles:
+                        if st.session_state.filters['output_format'] == "Title and Description":
+                            st.subheader(article['title'])
+                            st.write(article['description'])
+                        elif st.session_state.filters['output_format'] == "Title Only":
+                            st.subheader(article['title'])
+                        elif st.session_state.filters['output_format'] == "Description Only":
+                            st.write(article['description'])
+                        elif st.session_state.filters['output_format'] == "Content Only":
+                            st.subheader(article['title'])
+                            st.write(article['content'])
+                        elif st.session_state.filters['output_format'] == "Title, Description and Content":
+                            st.subheader(article['title'])
+                            st.write(article['description'])
+                            st.write(article['content'])
+                        
+                        if st.session_state.show_date:
+                            st.write(f"Published: {article['publishedAt']}")
+                        
+                        st.write("-" * 20)
+                else:
+                    st.error("Failed to fetch news articles. Please check your API key and try again.")
         else:
             st.warning("Please enter both your API key and search keywords.")
 
