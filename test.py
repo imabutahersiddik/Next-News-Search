@@ -1,3 +1,4 @@
+# app.py
 import streamlit as st
 from styles import get_styles
 import requests
@@ -8,7 +9,7 @@ from news_sources import NEWS_SOURCES
 from countries import COUNTRIES
 from categories import CATEGORIES
 from authors import AUTHORS
-from user_database import create_user_table, create_session_table, register_user, verify_user, get_user_by_session_id, save_session_id
+import user_database
 import secrets
 import sqlite3
 import yaml
@@ -25,8 +26,7 @@ cursor = conn.cursor()
 
 # Initialize database and create tables
 create_table()
-create_user_table()
-create_session_table()
+user_database.create_table()
 
 # Set the page title and layout
 st.set_page_config(page_title="Next News Search", layout="wide")
@@ -88,19 +88,42 @@ def user_authentication():
     # Check if a cookie exists
     if 'username' in st.cookies:
         username = st.cookies['username']
-        st.session_state['is_logged_in'] = True
-        st.session_state['username'] = username
-        st.sidebar.write(f"Logged in as: {username}")
-        if st.sidebar.button("Logout"):
-            # Delete the cookie
-            st.cookies.delete('username')
+        # Check if the session ID matches in the database
+        user = user_database.get_user_by_session_id(st.session_state['session_id'])
+        if user and user[0] == username:
+            # Check if the session is still active
+            last_activity = user_database.get_last_activity(st.session_state['session_id'])
+            if last_activity:
+                # Calculate time since last activity
+                time_elapsed = datetime.now() - last_activity
+                # Set session timeout to 9999 days (NOT RECOMMENDED)
+                session_timeout = timedelta(days=9999)  
+                if time_elapsed > session_timeout:
+                    st.session_state['is_logged_in'] = False
+                    st.session_state['username'] = ''
+                    st.sidebar.write("Session expired. Please log in again.")
+                else:
+                    # Update last activity timestamp
+                    user_database.save_last_activity(st.session_state['session_id'])
+                    st.session_state['is_logged_in'] = True
+                    st.session_state['username'] = username
+                    st.sidebar.write(f"Logged in as: {username}")
+                    if st.sidebar.button("Logout"):
+                        # Delete the cookie
+                        st.cookies.delete('username')
+                        st.session_state['is_logged_in'] = False
+                        st.session_state['username'] = ''
+                        st.sidebar.write("Logged out successfully.")
+        else:
+            # Session ID mismatch or user not found
             st.session_state['is_logged_in'] = False
             st.session_state['username'] = ''
-            st.sidebar.write("Logged out successfully.")
+            st.sidebar.write("Session expired. Please log in again.")
     else:
-        st.session_state['is_logged_in'] = False  # Initialize login state
+        # No cookie found
+        st.session_state['is_logged_in'] = False
         if 'username' not in st.session_state:
-            st.session_state['username'] = ''  # Initialize username
+            st.session_state['username'] = ''
 
         menu = ["Login", "Register"]
         choice = st.sidebar.selectbox("Select Action", menu)
@@ -109,12 +132,13 @@ def user_authentication():
             username = st.sidebar.text_input("Username", key="login_username")
             password = st.sidebar.text_input("Password", type='password', key="login_password")
             if st.sidebar.button("Login"):
-                if verify_user(username, password):
+                user = user_database.get_user(username)
+                if user and user[1] == password:
                     st.success("Logged in successfully!")
                     st.session_state['username'] = username
                     st.session_state['is_logged_in'] = True
                     # Save session ID in the database
-                    save_session_id(st.session_state['session_id'], username)
+                    user_database.save_session_id(st.session_state['session_id'], username)
                     # Set the cookie
                     st.cookies['username'] = username
                 else:
@@ -124,7 +148,8 @@ def user_authentication():
             username = st.sidebar.text_input("Choose a Username", key="register_username")
             password = st.sidebar.text_input("Choose a Password", type='password', key="register_password")
             if st.sidebar.button("Register"):
-                if register_user(username, password):
+                if user_database.get_user(username) is None:
+                    user_database.add_user(username, password)
                     st.success("Registration completed! You can now log in.")
                 else:
                     st.error("Username already exists. Please choose a different one.")
