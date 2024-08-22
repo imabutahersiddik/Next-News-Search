@@ -3,7 +3,7 @@ from styles import get_styles
 import requests
 import json
 from datetime import datetime, timedelta
-from database import create_table, save_api_key, load_api_key, save_user_preferences, load_user_preferences, register_user, login_user, load_user, save_search, load_api_keys
+from database import create_table, save_api_key, load_api_keys, save_user_preferences, load_user_preferences, register_user, login_user, save_search
 from news_sources import NEWS_SOURCES
 from countries import COUNTRIES
 from categories import CATEGORIES
