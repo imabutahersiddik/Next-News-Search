@@ -10,9 +10,9 @@ from categories import CATEGORIES
 from authors import AUTHORS
 from user_database import create_user_table, register_user, verify_user  # Import new functions
 
-# Initialize database and create user table
+# Initialize database and create tables
 create_table()
-create_user_table()  # Create user table
+create_user_table()  # Create user table for user authentication
 
 # Set the page title and layout
 st.set_page_config(page_title="Next News Search", layout="wide")
@@ -36,29 +36,31 @@ LANGUAGES = {
 # User Authentication
 def user_authentication():
     st.sidebar.header("User Authentication")
-    menu = ["Login", "Register"]
-    choice = st.sidebar.selectbox("Select Action", menu)
+    
+    if 'is_logged_in' not in st.session_state or not st.session_state['is_logged_in']:
+        menu = ["Login", "Register"]
+        choice = st.sidebar.selectbox("Select Action", menu)
 
-    if choice == "Login":
-        username = st.sidebar.text_input("Username")
-        password = st.sidebar.text_input("Password", type='password')
-        if st.sidebar.button("Login"):
-            if verify_user(username, password):
-                st.success("Logged in successfully!")
-                st.session_state['username'] = username  # Store username in session state
-                st.session_state['is_logged_in'] = True  # Set logged-in state
-            else:
-                st.error("Invalid username or password.")
+        if choice == "Login":
+            username = st.sidebar.text_input("Username", key="login_username")
+            password = st.sidebar.text_input("Password", type='password', key="login_password")
+            if st.sidebar.button("Login"):
+                if verify_user(username, password):
+                    st.success("Logged in successfully!")
+                    st.session_state['username'] = username  # Store username in session state
+                    st.session_state['is_logged_in'] = True  # Set logged-in state
+                else:
+                    st.error("Invalid username or password.")
 
-    elif choice == "Register":
-        username = st.sidebar.text_input("Choose a Username")
-        password = st.sidebar.text_input("Choose a Password", type='password')
-        if st.sidebar.button("Register"):
-            if register_user(username, password):
-                st.success("Registration completed! You can now log in.")
-                st.session_state['redirect_to_login'] = True  # Flag to redirect to login
-            else:
-                st.error("Username already exists. Please choose a different one.")
+        elif choice == "Register":
+            username = st.sidebar.text_input("Choose a Username", key="register_username")
+            password = st.sidebar.text_input("Choose a Password", type='password', key="register_password")
+            if st.sidebar.button("Register"):
+                if register_user(username, password):
+                    st.success("Registration completed! You can now log in.")
+                    st.session_state['redirect_to_login'] = True  # Flag to redirect to login
+                else:
+                    st.error("Username already exists. Please choose a different one.")
 
 # Call the user authentication function
 user_authentication()
@@ -68,42 +70,55 @@ if 'redirect_to_login' in st.session_state and st.session_state['redirect_to_log
     st.session_state['redirect_to_login'] = False  # Reset the flag
     st.sidebar.selectbox("Select Action", ["Login", "Register"], index=0)  # Switch to Login
 
+# Load the API key from the database
+api_key = load_api_key()
+
+# Prompt for API key if not available
+if not api_key:
+    st.warning("Please enter your API key to use the application.")
+    new_api_key = st.text_input("Enter your News API key:", key="new_api_key_input")
+    if st.button("Save API Key", key="save_api_key_button"):
+        if new_api_key:
+            save_api_key(new_api_key)
+            st.success("API Key saved successfully!")
+            api_key = new_api_key  # Update the local variable
+        else:
+            st.warning("Please enter a valid API key.")
+
+# Create tabs for Search, Filters, About, and Settings
+tabs = st.tabs(["Search", "Filters", "About", "Settings"])
+
+# Initialize session state for filters if not already done
+if "filters" not in st.session_state:
+    st.session_state.filters = {
+        "language": "",
+        "country": "",
+        "category": "",
+        "author": "",
+        "sources": [],
+        "from_date": datetime.now() - timedelta(days=30),
+        "to_date": datetime.now(),
+        "num_articles": 19,
+        "output_format": "Title and Description"  # Default output format
+    }
+
+# Initialize session state for "show_date" if not already done
+if "show_date" not in st.session_state:
+    st.session_state.show_date = False
+
 # Check if user is logged in
 if 'is_logged_in' not in st.session_state or not st.session_state['is_logged_in']:
     st.warning("Please log in to access the application.")
 else:
-    # The rest of your application code goes here
-    # For example, fetching news articles, displaying filters, etc.
-    
-    # Initialize session state for filters if not already done
-    if "filters" not in st.session_state:
-        st.session_state.filters = {
-            "language": "",
-            "country": "",
-            "category": "",
-            "author": "",
-            "sources": [],
-            "from_date": datetime.now() - timedelta(days=30),
-            "to_date": datetime.now(),
-            "num_articles": 19,
-            "output_format": "Title and Description"  # Default output format
-        }
-
-    # Initialize session state for "show_date" if not already done
-    if "show_date" not in st.session_state:
-        st.session_state.show_date = False
-
-    # Search Tab
-    tabs = st.tabs(["Search", "Filters", "About", "Settings"])
-
     # Search Tab
     with tabs[0]:
+        st.markdown("<h1 style='text-align: center;'>Next News Search</h1>", unsafe_allow_html=True)
+
         # User input for search keywords
         search_word = st.text_input("Search the news...", placeholder="Enter keywords here...", key="search_input")
-        
+
         # Button to fetch news (icon on right)
         if st.button("Search", key="search_button"):
-            api_key = load_api_key()  # Load API key from the database
             if api_key and search_word:
                 with st.spinner("Fetching news articles..."):
                     # Use filters from session state
@@ -115,40 +130,17 @@ else:
                     from_date = st.session_state.filters['from_date']
                     to_date = st.session_state.filters['to_date']
                     num_articles = st.session_state.filters['num_articles']
-                    
+
                     # Convert dates to string format
                     from_date_str = from_date.strftime('%Y-%m-%d') if from_date else None
                     to_date_str = to_date.strftime('%Y-%m-%d') if to_date else None
-                    
-                    # Construct the API request URL based on selected filters
-                    url = f"https://newsapi.org/v2/everything?q={search_word}&apiKey={api_key}&sortBy=relevancy&pageSize={num_articles}&page=1"
-                    
-                    if language:
-                        url += f"&language={language}"
-                    
-                    if country:
-                        url += f"&country={country}"
-                    
-                    if category:
-                        url += f"&category={category}"
-                    
-                    if author:
-                        url += f"&author={author}"
-                    
-                    if sources:
-                        url += f"&sources={','.join(sources)}"
-                    
-                    if from_date_str and to_date_str:
-                        url += f"&from={from_date_str}&to={to_date_str}"
-                    
-                    response = requests.get(url)
-                    
-                    if response.status_code == 200:
-                        data = json.loads(response.text)
-                        articles = data.get('articles', [])
-                        
+
+                    # Fetch news articles
+                    articles = fetch_news(api_key, search_word, 'relevancy', from_date_str, to_date_str, num_articles, language, country, category, author, sources)
+
+                    if articles:
                         # Display articles based on the selected output format
-                        for article in articles:
+                        for article in articles['articles']:
                             if st.session_state.filters['output_format'] == "Title and Description":
                                 st.subheader(article['title'])
                                 st.write(article['description'])
@@ -163,20 +155,18 @@ else:
                                 st.subheader(article['title'])
                                 st.write(article['description'])
                                 st.write(article['content'])
-                            
+
                             if st.session_state.show_date:
                                 st.write(f"Published: {article['publishedAt']}")
-                            
+
                             st.write("-" * 20)
-                    else:
-                        st.error("Failed to fetch news articles. Please check your API key and try again.")
             else:
                 st.warning("Please enter both your API key and search keywords.")
 
     # Filters Tab
     with tabs[1]:
         st.header("Filter News")
-        
+
         # Menu options for filtering news
         menu_options = ["Recent News", "Trending News", "Breaking News", "Oldest News", "Custom Date Range"]
         selected_menu = st.selectbox("Filter News By:", menu_options, key="filter_menu")
@@ -194,8 +184,8 @@ else:
 
         # Advanced filters for language, country, category, author, and sources
         st.session_state.filters['language'] = st.selectbox(
-            "Select Language:", 
-            options=[""] + list(LANGUAGES.keys()), 
+            "Select Language:",
+            options=[""] + list(LANGUAGES.keys()),
             format_func=lambda x: LANGUAGES.get(x, x),  # Display readable names
             key="language_select"
         )
@@ -223,7 +213,7 @@ else:
         # Use predefined sources from news_sources.py
         source_options = [source['id'] for source in NEWS_SOURCES]
         source_names = [source['name'] for source in NEWS_SOURCES]
-        
+
         st.session_state.filters['sources'] = st.multiselect("Select Sources:", options=source_options, format_func=lambda x: source_names[source_options.index(x)], key="source_select")
 
         # Number of articles to fetch
@@ -258,14 +248,13 @@ else:
     # Settings Tab
     with tabs[3]:
         st.header("Settings")
-        
-        api_key = load_api_key()  # Load API key from the database
+
         if api_key:
             st.write("Current API Key: **" + api_key + "**")
-            
+
             # Option to update or remove the API key
             new_api_key = st.text_input("Update API Key:", placeholder="Enter new API key here", key="update_api_key_input")
-            
+
             if st.button("Update API Key", key="update_api_key_button"):
                 if new_api_key:
                     save_api_key(new_api_key)
@@ -273,7 +262,7 @@ else:
                     api_key = new_api_key  # Update the local variable
                 else:
                     st.warning("Please enter a valid API key.")
-            
+
             if st.button("Remove API Key", key="remove_api_key_button"):
                 save_api_key(None)  # Remove the API key
                 api_key = None  # Clear the local variable
