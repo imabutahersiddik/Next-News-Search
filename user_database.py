@@ -1,4 +1,3 @@
-# user_database.py
 import sqlite3
 import secrets
 from datetime import datetime, timedelta
@@ -77,4 +76,13 @@ def save_last_activity(session_id):
     conn.commit()
     conn.close()
 
-create_table()  # Create tables if they don't exist
+def remove_session_id(session_id):
+    """Removes the session ID from the database."""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
+    conn.commit()
+    conn.close()
+
+# Create tables if they don't exist
+create_table()
